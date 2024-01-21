@@ -16,7 +16,5 @@ pub async fn launch_server() {
         ast_map: DashMap::new(),
     })
     .finish();
-
-    serde_json::json!({"test": 20});
     Server::new(stdin, stdout, socket).serve(service).await;
 }
