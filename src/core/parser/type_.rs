@@ -14,7 +14,7 @@ pub fn type_parser<'tokens, 'src: 'tokens>() -> impl Parser<
     'tokens,
     ParserInput<'tokens, 'src>,
     Spanned<Type>,
-    extra::Err<Rich<'tokens, Token<'src>, Span>>,
+    extra::Err<Rich<'tokens, Token, Span>>,
 > + Clone {
     let ident = select!(
         Token::Identifier(ident) => ident,
@@ -26,7 +26,10 @@ pub fn type_parser<'tokens, 'src: 'tokens>() -> impl Parser<
             ident
                 .separated_by(just(Token::Punctuation(',')))
                 .collect::<Vec<_>>()
-                .delimited_by(just(Token::Operator("<")), just(Token::Operator(">")))
+                .delimited_by(
+                    just(Token::Operator("<".to_string())),
+                    just(Token::Operator(">".to_string())),
+                )
                 .or_not(),
         )
         .map(|(name, args)| Type {

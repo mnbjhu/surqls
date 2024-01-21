@@ -3,7 +3,7 @@ use std::fmt::Display;
 use chumsky::{
     extra,
     prelude::Rich,
-    primitive::{choice, just, none_of, one_of},
+    primitive::{choice, end, just, none_of, one_of},
     recovery::via_parser,
     text, IterParser, Parser,
 };
@@ -11,19 +11,19 @@ use chumsky::{
 use super::span::Span;
 
 #[derive(Debug, Clone, PartialEq)]
-pub enum Token<'src> {
+pub enum Token {
     Integer(i64),
     Float(f64),
-    String(&'src str),
+    String(String),
     Boolean(bool),
-    Identifier(&'src str),
+    Identifier(String),
     Keyword(Keyword),
-    Operator(&'src str),
+    Operator(String),
     Punctuation(char),
     Newline,
 }
 
-impl Display for Token<'_> {
+impl Display for Token {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Token::Integer(i) => write!(f, "{}", i),
@@ -63,6 +63,7 @@ pub enum Keyword {
     Limit,
     Skip,
     Content,
+    Group,
 }
 
 impl Display for Keyword {
@@ -87,6 +88,7 @@ impl Display for Keyword {
             Keyword::As => write!(f, "as"),
             Keyword::Order => write!(f, "order"),
             Keyword::By => write!(f, "by"),
+            Keyword::Group => write!(f, "group"),
             Keyword::Limit => write!(f, "limit"),
             Keyword::Skip => write!(f, "skip"),
             Keyword::Content => write!(f, "content"),
@@ -94,7 +96,7 @@ impl Display for Keyword {
     }
 }
 
-pub fn lexer<'a>() -> impl Parser<'a, &'a str, Vec<(Token<'a>, Span)>, extra::Err<Rich<'a, char>>> {
+pub fn lexer<'a>() -> impl Parser<'a, &'a str, Vec<(Token, Span)>, extra::Err<Rich<'a, char>>> {
     let space = one_of(" \t").repeated().ignored().or_not();
     let ident = text::ident()
         .map(|s| match s {
@@ -122,7 +124,7 @@ pub fn lexer<'a>() -> impl Parser<'a, &'a str, Vec<(Token<'a>, Span)>, extra::Er
             "content" => Token::Keyword(Keyword::Content),
             "true" => Token::Boolean(true),
             "false" => Token::Boolean(false),
-            _ => Token::Identifier(s),
+            _ => Token::Identifier(s.to_string()),
         })
         .map_with(|t, s| (t, s.span()));
 
@@ -166,7 +168,7 @@ pub fn lexer<'a>() -> impl Parser<'a, &'a str, Vec<(Token<'a>, Span)>, extra::Er
         .or(escape)
         .repeated()
         .to_slice()
-        .map(|s: &str| Token::String(s))
+        .map(|s: &str| Token::String(s.to_string()))
         .delimited_by(
             just('"'),
             just('"')
@@ -175,15 +177,14 @@ pub fn lexer<'a>() -> impl Parser<'a, &'a str, Vec<(Token<'a>, Span)>, extra::Er
         )
         .map_with(|t, e| (t, e.span()));
 
-    let ctrl = one_of("#_.,;:{}[]()")
+    let punctuation = one_of("#_.,;:{}[]()")
         .map(Token::Punctuation)
         .map_with(|t, e| (t, e.span()));
 
-    let op = one_of("+-*/=<>")
+    let op = one_of("+-*/=<>|&!")
         .to_slice()
-        .then(one_of("+-*/=<>").repeated().to_slice())
-        .to_slice()
-        .map(|s| Token::Operator(s))
+        .then(one_of("+-*/=<>|&!").repeated().collect::<String>())
+        .map(|(f, s)| Token::Operator(format!("{}{}", f, s)))
         .map_with(|t, e| (t, e.span()));
 
     let new_line = one_of("\n").ignored().padded_by(space);
@@ -197,8 +198,17 @@ pub fn lexer<'a>() -> impl Parser<'a, &'a str, Vec<(Token<'a>, Span)>, extra::Er
         .map_with(|_, e| (Token::Punctuation(';'), e.span()))
         .padded_by(new_line.repeated());
 
-    choice((ident, int, float, string, ctrl, op, implicit_semi, semi))
-        .padded_by(space)
-        .repeated()
-        .collect::<Vec<_>>()
+    choice((
+        semi,
+        ident,
+        int,
+        float,
+        string,
+        punctuation,
+        op,
+        implicit_semi,
+    ))
+    .padded_by(space)
+    .repeated()
+    .collect::<Vec<_>>()
 }

@@ -1,27 +1,26 @@
-use chumsky::{extra, prelude::Rich, primitive::just, select, Parser};
+use chumsky::{primitive::just, select, Parser};
 
 use crate::core::{
     lexer::{Keyword, Token},
-    span::{ParserInput, Span, Spanned},
+    span::{ParserInput, Spanned},
 };
 
-use super::expr::{
-    newline::optional_new_line,
-    parser::{expr_parser, Expression},
+use super::{
+    expr::{
+        newline::optional_new_line,
+        parser::{expr_parser, Expression},
+    },
+    parser::Extra,
 };
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone)]
 pub struct Projection {
     pub expr: Spanned<Expression>,
     pub alias: Option<Spanned<String>>,
 }
 
-pub fn projection_parser<'tokens, 'src: 'tokens>() -> impl Parser<
-    'tokens,
-    ParserInput<'tokens, 'src>,
-    Spanned<Projection>,
-    extra::Err<Rich<'tokens, Token<'src>, Span>>,
-> + Clone {
+pub fn projection_parser<'tokens, 'src: 'tokens>(
+) -> impl Parser<'tokens, ParserInput<'tokens, 'src>, Spanned<Projection>, Extra<'tokens>> + Clone {
     let identifier_parser = select! {
         Token::Identifier(s) => s,
     }

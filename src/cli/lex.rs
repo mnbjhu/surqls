@@ -12,7 +12,17 @@ pub fn lex(file: PathBuf) {
     let (tokens, _) = lexer().parse(&text).into_output_errors();
     match tokens {
         Some(tokens) => {
+            let mut prev = 0;
             for (token, span) in tokens {
+                if span.start > prev {
+                    let range = Range {
+                        start: prev,
+                        end: span.start,
+                    };
+                    let text = rope.get_slice(range).unwrap();
+                    print!("{}", text);
+                }
+                prev = span.end;
                 let color = match token {
                     Token::Identifier(_) => "green",
                     Token::Keyword(_) => "yellow",
@@ -25,14 +35,17 @@ pub fn lex(file: PathBuf) {
                     Token::Newline => "white",
                 };
                 let color = colored::Color::from(color);
-                let text = rope
+                let mut text = rope
                     .get_slice(Range {
                         start: span.start,
                         end: span.end,
                     })
                     .unwrap()
                     .to_string();
-                let text = ColoredString::from(text).on_color(color);
+                if token == Token::Newline {
+                    text = format!("{}{}", "↵", text);
+                }
+                let text = ColoredString::from(text).color(color);
                 print!("{}", text);
             }
         }

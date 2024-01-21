@@ -9,7 +9,7 @@ use tower_lsp::lsp_types::{DocumentSymbol, SymbolKind};
 use crate::{
     core::{
         lexer::Token,
-        parser::symbol::Symbol,
+        parser::{parser::Extra, symbol::Symbol},
         span::{ParserInput, Span, Spanned},
     },
     ls::util::range::span_to_range,
@@ -17,33 +17,21 @@ use crate::{
 
 use super::{newline::optional_new_line, parser::Expression};
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug)]
 pub enum Access {
     Property(String),
     Index(Spanned<Expression>),
 }
 
 pub fn access_parser<'tokens, 'src: 'tokens>(
-    atom: impl Parser<
-            'tokens,
-            ParserInput<'tokens, 'src>,
-            Spanned<Expression>,
-            extra::Err<Rich<'tokens, Token<'src>, Span>>,
-        > + Clone
+    atom: impl Parser<'tokens, ParserInput<'tokens, 'src>, Spanned<Expression>, Extra<'tokens>>
+        + Clone
         + 'tokens,
-    expr: impl Parser<
-            'tokens,
-            ParserInput<'tokens, 'src>,
-            Spanned<Expression>,
-            extra::Err<Rich<'tokens, Token<'src>, Span>>,
-        > + Clone
+    expr: impl Parser<'tokens, ParserInput<'tokens, 'src>, Spanned<Expression>, Extra<'tokens>>
+        + Clone
         + 'tokens,
-) -> impl Parser<
-    'tokens,
-    ParserInput<'tokens, 'src>,
-    Spanned<Expression>,
-    extra::Err<Rich<'tokens, Token<'src>, Span>>,
-> + Clone
+) -> impl Parser<'tokens, ParserInput<'tokens, 'src>, Spanned<Expression>, Extra<'tokens>>
+       + Clone
        + 'tokens {
     let index = expr
         .clone()

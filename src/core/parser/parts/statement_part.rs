@@ -15,6 +15,7 @@ use crate::{
                 newline::optional_new_line,
                 parser::{expr_parser, Expression},
             },
+            parser::Extra,
             projection::{projection_parser, Projection},
             symbol::Symbol,
         },
@@ -32,12 +33,9 @@ pub enum StatementPart {
     Content(Option<Spanned<Expression>>),
 }
 
-pub fn statement_part_parser<'tokens, 'src: 'tokens>() -> impl Parser<
-    'tokens,
-    ParserInput<'tokens, 'src>,
-    Spanned<StatementPart>,
-    extra::Err<Rich<'tokens, Token<'src>, Span>>,
-> + Clone {
+pub fn statement_part_parser<'tokens, 'src: 'tokens>(
+) -> impl Parser<'tokens, ParserInput<'tokens, 'src>, Spanned<StatementPart>, Extra<'tokens>> + Clone
+{
     let where_clause = just(Token::Keyword(Keyword::Where))
         .ignore_then(optional_new_line().ignore_then(expr_parser()).or_not())
         .map(StatementPart::WhereClause);
@@ -74,8 +72,8 @@ pub fn statement_part_parser<'tokens, 'src: 'tokens>() -> impl Parser<
         .map(StatementPart::From);
 
     let content = just(Token::Keyword(Keyword::Content))
-        .ignore_then(optional_new_line().ignore_then(expr_parser()).or_not())
-        .map(StatementPart::Content);
+        .ignore_then(optional_new_line().ignore_then(expr_parser()))
+        .map(|e| StatementPart::Content(Some(e)));
 
     choice((
         where_clause,

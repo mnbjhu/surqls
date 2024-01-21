@@ -1,7 +1,15 @@
+use std::collections::HashMap;
+
 use chumsky::{error::RichPattern, prelude::Input, Parser};
 use tower_lsp::lsp_types::{CompletionItem, CompletionItemKind, CompletionParams};
 
-use crate::core::{lexer::lexer, parser::parser::parser};
+use crate::core::{
+    lexer::lexer,
+    parser::{
+        delcarations::{ScopedItems, Type},
+        parser::parser,
+    },
+};
 
 use super::{backend::Backend, util::range::span_to_range};
 
@@ -12,10 +20,18 @@ pub async fn get_completions(backend: &Backend, _params: CompletionParams) -> Ve
     let text = rope.value().to_string();
     let (tokens, _) = lexer().parse(text.as_str()).into_output_errors();
     if let Some(tokens) = tokens {
-        let parser_result = parser().parse(
+        let mut table_definitions = HashMap::new();
+        table_definitions.insert("thing".to_string(), Type::Any);
+
+        let mut scoped_items = ScopedItems {
+            table_definitions,
+            ..Default::default()
+        };
+        let parser_result = parser().parse_with_state(
             tokens
                 .as_slice()
                 .spanned((rope.len_chars()..rope.len_chars()).into()),
+            &mut scoped_items,
         );
         let (_, parse_errs) = parser_result.into_output_errors();
         for err in parse_errs {

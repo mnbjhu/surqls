@@ -9,6 +9,7 @@ use chumsky::{
 
 use crate::core::{
     lexer::Token,
+    parser::parser::Extra,
     span::{ParserInput, Span, Spanned},
 };
 
@@ -56,50 +57,15 @@ impl Display for BinaryOperator {
     }
 }
 
-#[derive(Clone, Debug, PartialEq)]
-pub enum UnOp {
-    Neg,
-    Not,
-}
-
-impl Display for UnOp {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let s = match self {
-            UnOp::Neg => "-",
-            UnOp::Not => "!",
-        };
-        write!(f, "{}", s)
-    }
-}
-
-#[derive(Clone, Debug, PartialEq)]
-pub enum Operation {
-    BinOp(
-        Box<Spanned<Expression>>,
-        BinaryOperator,
-        Box<Spanned<Expression>>,
-    ),
-    UnOp(UnOp, Box<Spanned<Expression>>),
-}
-
 pub fn op_parser<'tokens, 'src: 'tokens>(
-    atom: impl Parser<
-            'tokens,
-            ParserInput<'tokens, 'src>,
-            Spanned<Expression>,
-            extra::Err<Rich<'tokens, Token<'src>, Span>>,
-        > + Clone
+    atom: impl Parser<'tokens, ParserInput<'tokens, 'src>, Spanned<Expression>, Extra<'tokens>>
+        + Clone
         + 'tokens,
-) -> impl Parser<
-    'tokens,
-    ParserInput<'tokens, 'src>,
-    Spanned<Expression>,
-    extra::Err<Rich<'tokens, Token<'src>, Span>>,
-> + Clone {
-    let unary_op = select! {
-        Token::Punctuation('-') => UnaryOperator::Negate,
-        Token::Punctuation('!') => UnaryOperator::Not,
-    };
+) -> impl Parser<'tokens, ParserInput<'tokens, 'src>, Spanned<Expression>, Extra<'tokens>> + Clone {
+    let unary_op = choice((
+        just(Token::Operator("-".to_string())).map(|_| UnaryOperator::Negate),
+        just(Token::Operator("!".to_string())).map(|_| UnaryOperator::Not),
+    ));
 
     let unary = unary_op
         .map_with(|op, s| (op, s.span()))
@@ -121,8 +87,8 @@ pub fn op_parser<'tokens, 'src: 'tokens>(
         .clone()
         .foldl_with(
             choice((
-                just(Token::Operator("*")).map(|_| BinaryOperator::Multiply),
-                just(Token::Operator("/")).map(|_| BinaryOperator::Divide),
+                just(Token::Operator("*".to_string())).map(|_| BinaryOperator::Multiply),
+                just(Token::Operator("/".to_string())).map(|_| BinaryOperator::Divide),
             ))
             .map_with(|op, s| (op, s.span()))
             .padded_by(optional_new_line())
@@ -145,9 +111,9 @@ pub fn op_parser<'tokens, 'src: 'tokens>(
         .clone()
         .foldl_with(
             choice((
-                just(Token::Operator("+")).map(|_| BinaryOperator::Add),
-                just(Token::Operator("-")).map(|_| BinaryOperator::Subtract),
-                just(Token::Operator("%")).map(|_| BinaryOperator::Modulo),
+                just(Token::Operator("+".to_string())).map(|_| BinaryOperator::Add),
+                just(Token::Operator("-".to_string())).map(|_| BinaryOperator::Subtract),
+                just(Token::Operator("%".to_string())).map(|_| BinaryOperator::Modulo),
             ))
             .map_with(|op, s| (op, s.span()))
             .padded_by(optional_new_line())
@@ -170,12 +136,12 @@ pub fn op_parser<'tokens, 'src: 'tokens>(
         .clone()
         .foldl_with(
             choice((
-                just(Token::Operator("==")).map(|_| BinaryOperator::Equals),
-                just(Token::Operator("!=")).map(|_| BinaryOperator::NotEquals),
-                just(Token::Operator(">")).map(|_| BinaryOperator::GreaterThan),
-                just(Token::Operator("<")).map(|_| BinaryOperator::LessThan),
-                just(Token::Operator(">=")).map(|_| BinaryOperator::GreaterThanOrEqual),
-                just(Token::Operator("<=")).map(|_| BinaryOperator::LessThanOrEqual),
+                just(Token::Operator("==".to_string())).map(|_| BinaryOperator::Equals),
+                just(Token::Operator("!=".to_string())).map(|_| BinaryOperator::NotEquals),
+                just(Token::Operator(">".to_string())).map(|_| BinaryOperator::GreaterThan),
+                just(Token::Operator("<".to_string())).map(|_| BinaryOperator::LessThan),
+                just(Token::Operator(">=".to_string())).map(|_| BinaryOperator::GreaterThanOrEqual),
+                just(Token::Operator("<=".to_string())).map(|_| BinaryOperator::LessThanOrEqual),
             ))
             .map_with(|op, s| (op, s.span()))
             .padded_by(optional_new_line())
@@ -197,7 +163,7 @@ pub fn op_parser<'tokens, 'src: 'tokens>(
     let and = cmp
         .clone()
         .foldl_with(
-            just(Token::Operator("&&"))
+            just(Token::Operator("&&".to_string()))
                 .padded_by(optional_new_line())
                 .map_with(|_, s| (BinaryOperator::And, s.span()))
                 .then(cmp)
@@ -218,7 +184,7 @@ pub fn op_parser<'tokens, 'src: 'tokens>(
     let or = and
         .clone()
         .foldl_with(
-            just(Token::Operator("||"))
+            just(Token::Operator("||".to_string()))
                 .padded_by(optional_new_line())
                 .map_with(|_, s| (BinaryOperator::Or, s.span()))
                 .then(and)

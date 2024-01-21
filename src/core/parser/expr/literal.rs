@@ -4,18 +4,14 @@ use tower_lsp::lsp_types::{DocumentSymbol, SymbolKind};
 use crate::{
     core::{
         lexer::Token,
-        parser::symbol::Symbol,
+        parser::{parser::Extra, symbol::Symbol},
         span::{ParserInput, Span, Spanned},
     },
     ls::util::range::span_to_range,
 };
 
-pub fn literal_parser<'tokens, 'src: 'tokens>() -> impl Parser<
-    'tokens,
-    ParserInput<'tokens, 'src>,
-    Literal,
-    extra::Err<Rich<'tokens, Token<'src>, Span>>,
-> + Clone {
+pub fn literal_parser<'tokens, 'src: 'tokens>(
+) -> impl Parser<'tokens, ParserInput<'tokens, 'src>, Literal, Extra<'tokens>> + Clone {
     select! {
         Token::Integer(i) => Literal::Int(i),
         Token::Float(f) => Literal::Float(f),
