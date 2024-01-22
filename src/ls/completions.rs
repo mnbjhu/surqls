@@ -6,6 +6,7 @@ use tower_lsp::lsp_types::{CompletionItem, CompletionItemKind, CompletionParams}
 use crate::core::{
     lexer::lexer,
     parser::{
+        completion::HasCompletionItems,
         delcarations::{ScopedItems, Type},
         parser::parser,
     },
@@ -22,10 +23,13 @@ pub async fn get_completions(backend: &Backend, _params: CompletionParams) -> Ve
     if let Some(tokens) = tokens {
         let mut table_definitions = HashMap::new();
         table_definitions.insert("thing".to_string(), Type::Any);
+        let mut scoped_table = HashMap::new();
+        scoped_table.insert("some".to_string(), Type::String);
+        scoped_table.insert("other".to_string(), Type::Int);
 
         let mut scoped_items = ScopedItems {
             table_definitions,
-            ..Default::default()
+            scoped_table,
         };
         let parser_result = parser().parse_with_state(
             tokens
@@ -33,7 +37,7 @@ pub async fn get_completions(backend: &Backend, _params: CompletionParams) -> Ve
                 .spanned((rope.len_chars()..rope.len_chars()).into()),
             &mut scoped_items,
         );
-        let (_, parse_errs) = parser_result.into_output_errors();
+        let (ast, parse_errs) = parser_result.into_output_errors();
         for err in parse_errs {
             let range = span_to_range(err.span(), &rope).unwrap();
             if range.start <= _params.text_document_position.position
@@ -54,6 +58,13 @@ pub async fn get_completions(backend: &Backend, _params: CompletionParams) -> Ve
                 }
             }
         }
+        if let Some(ast) = ast {
+            completions.extend(ast.get_completion_items(
+                &mut scoped_items,
+                _params.text_document_position.position,
+                &rope,
+            ))
+        };
     }
     completions
 }

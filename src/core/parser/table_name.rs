@@ -1,6 +1,8 @@
 use chumsky::{extra, prelude::Rich, select, Parser};
 use ropey::Rope;
-use tower_lsp::lsp_types::{Diagnostic, DiagnosticSeverity};
+use tower_lsp::lsp_types::{
+    CompletionItem, CompletionItemKind, Diagnostic, DiagnosticSeverity, Position,
+};
 
 use crate::{
     core::{
@@ -11,6 +13,7 @@ use crate::{
 };
 
 use super::{
+    completion::HasCompletionItems,
     delcarations::{ScopedItems, Type},
     diagnostic::HasDiagnostic,
 };
@@ -57,5 +60,25 @@ impl HasDiagnostic for Spanned<TableName> {
             }
             TableName::Found(_, _) => vec![],
         }
+    }
+}
+
+impl HasCompletionItems for TableName {
+    fn get_completion_items(
+        &self,
+        scope: &mut ScopedItems,
+        position: Position,
+        rope: &Rope,
+    ) -> Vec<CompletionItem> {
+        scope
+            .table_definitions
+            .iter()
+            .map(|(name, ty)| CompletionItem {
+                label: name.to_string(),
+                detail: Some(ty.to_string()),
+                kind: Some(CompletionItemKind::STRUCT),
+                ..Default::default()
+            })
+            .collect()
     }
 }

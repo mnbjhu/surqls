@@ -5,12 +5,14 @@ use chumsky::{
     IterParser, Parser,
 };
 use ropey::Rope;
-use tower_lsp::lsp_types::{Diagnostic, DocumentSymbol, SymbolKind};
+use tower_lsp::lsp_types::{CompletionItem, Diagnostic, DocumentSymbol, Position, SymbolKind};
 
 use crate::{
     core::{
         lexer::{Keyword, Token},
         parser::{
+            completion::HasCompletionItems,
+            delcarations::ScopedItems,
             diagnostic::HasDiagnostic,
             expr::{
                 newline::optional_new_line,
@@ -29,6 +31,23 @@ pub struct CreateStatement {
     pub table: Option<Spanned<TableName>>,
     pub content: Option<Spanned<Expression>>,
     pub transforms: Vec<Spanned<Transform>>,
+}
+
+impl HasCompletionItems for CreateStatement {
+    fn get_completion_items(
+        &self,
+        scope: &mut ScopedItems,
+        position: Position,
+        rope: &Rope,
+    ) -> Vec<CompletionItem> {
+        if let Some(table) = &self.table {
+            let range = span_to_range(&table.1, rope).unwrap();
+            if range.start <= position && position <= range.end {
+                return table.0.get_completion_items(scope, position, rope);
+            }
+        };
+        return vec![];
+    }
 }
 
 pub struct Content(pub Option<Spanned<Expression>>);

@@ -1,9 +1,15 @@
+use chumsky::extra::State;
 use ropey::Rope;
-use tower_lsp::lsp_types::{Diagnostic, DiagnosticSeverity, DocumentSymbol, SymbolKind};
+use tower_lsp::lsp_types::{
+    CompletionItem, Diagnostic, DiagnosticSeverity, DocumentSymbol, Position, SymbolKind,
+};
 
 use crate::{
     core::{
-        parser::{diagnostic::HasDiagnostic, symbol::Symbol},
+        parser::{
+            completion::HasCompletionItems, delcarations::ScopedItems, diagnostic::HasDiagnostic,
+            symbol::Symbol,
+        },
         span::Spanned,
     },
     ls::util::range::span_to_range,
@@ -49,6 +55,21 @@ impl HasDiagnostic for Spanned<Statement> {
                 message: format!("Invalid Statement: '{}'", text),
                 ..Default::default()
             }],
+        }
+    }
+}
+
+impl HasCompletionItems for Statement {
+    fn get_completion_items(
+        &self,
+        scope: &mut ScopedItems,
+        position: Position,
+        rope: &Rope,
+    ) -> Vec<CompletionItem> {
+        match &self {
+            Statement::Crud(crud) => vec![],
+            Statement::Create(create) => create.get_completion_items(scope, position, rope),
+            Statement::Invalid => vec![],
         }
     }
 }

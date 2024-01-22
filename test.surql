@@ -1,5 +1,6 @@
 create thing
 content {
-  other: "content"
+  other: other,
+  so: a + b,
 }
 where thing == "thing" && other == "content"

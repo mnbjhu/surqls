@@ -6,14 +6,18 @@ use chumsky::{
     IterParser, Parser,
 };
 use ropey::Rope;
-use tower_lsp::lsp_types::Diagnostic;
+use tower_lsp::lsp_types::{CompletionItem, Diagnostic, Position};
 
-use crate::core::{
-    lexer::{Keyword, Token},
-    span::{ParserInput, Span, Spanned},
+use crate::{
+    core::{
+        lexer::{Keyword, Token},
+        span::{ParserInput, Span, Spanned},
+    },
+    ls::util::range::span_to_range,
 };
 
 use super::{
+    completion::HasCompletionItems,
     delcarations::ScopedItems,
     diagnostic::HasDiagnostic,
     expr::newline::optional_new_line,
@@ -71,4 +75,22 @@ pub fn invalid_statement_parser<'tokens, 'src: 'tokens>(
     ]);
     let invalid = other.clone().then_ignore(other).map(|_| Statement::Invalid);
     optional_new_line().ignore_then(invalid.map_with(|s, span| (s, span.span())))
+}
+
+impl HasCompletionItems for File {
+    fn get_completion_items(
+        &self,
+        scope: &mut ScopedItems,
+        position: Position,
+        rope: &Rope,
+    ) -> Vec<CompletionItem> {
+        let mut completions = Vec::new();
+        for statement in self {
+            let range = span_to_range(&statement.1, rope).unwrap();
+            if range.start <= position && position <= range.end {
+                completions.extend(statement.0.get_completion_items(scope, position, rope));
+            }
+        }
+        completions
+    }
 }

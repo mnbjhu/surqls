@@ -1,3 +1,4 @@
+pub mod completion;
 pub mod delcarations;
 pub mod diagnostic;
 pub mod expr;
