@@ -1,5 +1,8 @@
 use ropey::Rope;
-use tower_lsp::lsp_types::{CompletionItem, Position};
+use tower_lsp::{
+    lsp_types::{CompletionItem, Position},
+    Client,
+};
 
 use super::delcarations::ScopedItems;
 
@@ -9,5 +12,6 @@ pub trait HasCompletionItems {
         scope: &mut ScopedItems,
         position: Position,
         rope: &Rope,
+        client: &Client,
     ) -> Vec<CompletionItem>;
 }

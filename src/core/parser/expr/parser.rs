@@ -3,12 +3,18 @@ use chumsky::{
     recursive::recursive,
     select, Parser,
 };
-use tower_lsp::lsp_types::{DocumentSymbol, SymbolKind};
+use ropey::Rope;
+use tower_lsp::lsp_types::{CompletionItem, Diagnostic, DocumentSymbol, Position, SymbolKind};
 
 use crate::{
     core::{
         lexer::Token,
-        parser::{parser::Extra, symbol::Symbol},
+        parser::{
+            delcarations::{ScopedItems, Type},
+            diagnostic::HasDiagnostic,
+            parser::Extra,
+            symbol::Symbol,
+        },
         span::{ParserInput, Spanned},
     },
     ls::util::range::span_to_range,
@@ -187,5 +193,63 @@ impl Symbol for Spanned<Expression> {
                 ),
             },
         }
+    }
+}
+
+pub trait HasCompletionItemsForType {
+    fn get_completion_items_for_type(
+        &self,
+        scope: &mut ScopedItems,
+        position: Position,
+        rope: &Rope,
+        type_: &Type,
+    ) -> Vec<CompletionItem>;
+}
+
+impl HasCompletionItemsForType for Expression {
+    fn get_completion_items_for_type(
+        &self,
+        scope: &mut ScopedItems,
+        position: Position,
+        rope: &Rope,
+        type_: &Type,
+    ) -> Vec<CompletionItem> {
+        match self {
+            Expression::Object(obj) => {
+                obj.get_completion_items_for_type(scope, position, rope, type_)
+            }
+            _ => vec![],
+        }
+    }
+}
+
+pub trait HasDiagnosticsForType {
+    fn diagnostics_for_type(
+        &self,
+        rope: &Rope,
+        type_: &Type,
+        scope: &mut ScopedItems,
+    ) -> Vec<Diagnostic>;
+}
+
+impl HasDiagnosticsForType for Spanned<Expression> {
+    fn diagnostics_for_type(
+        &self,
+        rope: &Rope,
+        type_: &Type,
+        scope: &mut ScopedItems,
+    ) -> Vec<Diagnostic> {
+        match &self {
+            (Expression::Object(obj), s) => {
+                (obj, s.clone()).diagnostics_for_type(rope, type_, scope)
+            }
+            _ => vec![],
+        }
+    }
+}
+
+impl HasDiagnostic for Spanned<Expression> {
+    fn diagnostics(&self, rope: &Rope, scope: &mut ScopedItems) -> Vec<Diagnostic> {
+        self.diagnostics_for_type(rope, &Type::Any, scope)
     }
 }

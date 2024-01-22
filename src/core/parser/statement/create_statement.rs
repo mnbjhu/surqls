@@ -1,13 +1,16 @@
 use chumsky::{
-    prelude::Rich,
-    primitive::{any, choice, end, just, none_of, one_of},
-    recovery::{skip_then_retry_until, skip_until, via_parser},
-    IterParser, Parser,
+    primitive::{just, none_of},
+    recovery::via_parser,
+    Parser,
 };
 use ropey::Rope;
-use tower_lsp::lsp_types::{CompletionItem, Diagnostic, DocumentSymbol, Position, SymbolKind};
+use tower_lsp::{
+    lsp_types::{CompletionItem, Diagnostic, DocumentSymbol, MessageType, Position, SymbolKind},
+    Client,
+};
 
 use crate::{
+    cli,
     core::{
         lexer::{Keyword, Token},
         parser::{
@@ -16,7 +19,9 @@ use crate::{
             diagnostic::HasDiagnostic,
             expr::{
                 newline::optional_new_line,
-                parser::{expr_parser, Expression},
+                parser::{
+                    expr_parser, Expression, HasCompletionItemsForType, HasDiagnosticsForType,
+                },
             },
             parser::Extra,
             symbol::Symbol,
@@ -39,11 +44,28 @@ impl HasCompletionItems for CreateStatement {
         scope: &mut ScopedItems,
         position: Position,
         rope: &Rope,
+        client: &Client,
     ) -> Vec<CompletionItem> {
         if let Some(table) = &self.table {
-            let range = span_to_range(&table.1, rope).unwrap();
-            if range.start <= position && position <= range.end {
-                return table.0.get_completion_items(scope, position, rope);
+            let name_range = span_to_range(&table.1, rope).unwrap();
+            if name_range.start <= position && position <= name_range.end {
+                return table.0.get_completion_items(scope, position, rope, client);
+            }
+            if let Some(content) = &self.content {
+                let content_range = span_to_range(&content.1, rope).unwrap();
+                match &table.0 {
+                    TableName::Found(name, ty) => {
+                        if content_range.start <= position && position <= content_range.end {
+                            return content.0.get_completion_items_for_type(
+                                scope,
+                                position,
+                                rope,
+                                &ty.clone(),
+                            );
+                        }
+                    }
+                    _ => {}
+                }
             }
         };
         return vec![];
@@ -61,81 +83,6 @@ pub enum Transform {
     Unknown,
 }
 
-pub fn transform_parser<'tokens, 'src: 'tokens>(
-) -> impl Parser<'tokens, ParserInput<'tokens, 'src>, Transform, Extra<'tokens>> + Clone {
-    let where_ = just(Token::Keyword(Keyword::Where))
-        .ignore_then(optional_new_line().ignore_then(expr_parser()))
-        .map(|e| Transform::Where(Some(e)));
-    // .recover_with(via_parser(
-    //     just(Token::Keyword(Keyword::Where))
-    //         .map(|_| Transform::Where(None))
-    //         .map_err_with_state(|_, span, _| {
-    //             Rich::custom(span, "Expected expression after 'WHERE'".to_string())
-    //         }),
-    // ));
-    let group_by = just(Token::Keyword(Keyword::Group))
-        .ignore_then(just(Token::Keyword(Keyword::By)))
-        .ignore_then(optional_new_line().ignore_then(expr_parser()))
-        .map(|e| Transform::Where(Some(e)));
-    // .recover_with(via_parser(
-    //     just(Token::Keyword(Keyword::Group))
-    //         .ignore_then(just(Token::Keyword(Keyword::By)))
-    //         .map(|_| Transform::Where(None))
-    //         .map_err_with_state(|_, span, _| {
-    //             Rich::custom(span, "Expected expression after 'GROUP BY'".to_string())
-    //         }),
-    // ));
-    let order_by = just(Token::Keyword(Keyword::Order))
-        .ignore_then(just(Token::Keyword(Keyword::By)))
-        .ignore_then(optional_new_line().ignore_then(expr_parser()))
-        .map(|e| Transform::Where(Some(e)));
-    // .recover_with(via_parser(
-    //     just(Token::Keyword(Keyword::Order))
-    //         .ignore_then(just(Token::Keyword(Keyword::By)))
-    //         .map(|_| Transform::Where(None))
-    //         .map_err_with_state(|_, span, _| {
-    //             Rich::custom(span, "Expected expression after 'ORDER BY'".to_string())
-    //         }),
-    // ));
-    let limit = just(Token::Keyword(Keyword::Limit))
-        .ignore_then(optional_new_line().ignore_then(expr_parser()))
-        .map(|e| Transform::Where(Some(e)));
-    // .recover_with(via_parser(
-    //     just(Token::Keyword(Keyword::Limit))
-    //         .map(|_| Transform::Where(None))
-    //         .map_err_with_state(|_, span, _| {
-    //             Rich::custom(span, "Expected expression after 'LIMIT'".to_string())
-    //         }),
-    // ));
-    let skip = just(Token::Keyword(Keyword::Skip))
-        .ignore_then(optional_new_line().ignore_then(expr_parser()))
-        .map(|e| Transform::Where(Some(e)));
-    // .recover_with(via_parser(
-    //     just(Token::Keyword(Keyword::Skip))
-    //         .map(|_| Transform::Where(None))
-    //         .map_err_with_state(|_, span, _| {
-    //             Rich::custom(span, "Expected expression after 'SKIP'".to_string())
-    //         }),
-    // ));
-    choice((where_, group_by, order_by, limit, skip)).recover_with(skip_then_retry_until(
-        any().ignored(),
-        choice((
-            end(),
-            one_of(vec![
-                Token::Keyword(Keyword::Where),
-                Token::Keyword(Keyword::Group),
-                Token::Keyword(Keyword::By),
-                Token::Keyword(Keyword::Order),
-                Token::Keyword(Keyword::Limit),
-                Token::Keyword(Keyword::Skip),
-                Token::Punctuation(';'),
-            ])
-            .ignored(),
-        )),
-    ))
-    // .recover_with(via_parser(invalid_transform_parser()))
-}
-
 fn invalid_transform_parser<'tokens, 'src: 'tokens>(
 ) -> impl Parser<'tokens, ParserInput<'tokens, 'src>, Transform, Extra<'tokens>> + Clone {
     let others = none_of(vec![
@@ -148,15 +95,14 @@ fn invalid_transform_parser<'tokens, 'src: 'tokens>(
         Token::Punctuation(';'),
         Token::Newline,
     ]);
-    others
-        .clone()
-        .then(others.repeated())
-        .then_ignore(end().or_not())
-        .map(|_| Transform::Unknown)
+    others.map(|_| Transform::Unknown)
 }
 
 pub fn create_statement_parser<'tokens, 'src: 'tokens>(
 ) -> impl Parser<'tokens, ParserInput<'tokens, 'src>, CreateStatement, Extra<'tokens>> + Clone {
+    // let ident = select! {
+    //     Token::Identifier(ident)  => ident,
+    // };
     let create_part = just(Token::Keyword(Keyword::Create))
         .ignore_then(optional_new_line().ignore_then(table_name_parser()))
         .map(|x| Some(x))
@@ -182,9 +128,9 @@ pub fn create_statement_parser<'tokens, 'src: 'tokens>(
         .then_ignore(optional_new_line())
         .then(content_part)
         .recover_with(via_parser(create_part.map(|x| (x, None))))
+        .then_ignore(optional_new_line())
         .then(
-            optional_new_line()
-                .ignore_then(where_part)
+            where_part
                 .map_with(|part, scope| (part, scope.span()))
                 .or_not(),
         )
@@ -310,12 +256,21 @@ impl Symbol for Spanned<Transform> {
 }
 
 impl HasDiagnostic for Spanned<&CreateStatement> {
-    fn diagnostics(&self, rope: &Rope) -> Vec<Diagnostic> {
-        match &self.0.table {
+    fn diagnostics(&self, rope: &Rope, scope: &mut ScopedItems) -> Vec<Diagnostic> {
+        return match &self.0.table {
             Some(table) => {
-                return table.diagnostics(rope);
+                let mut diags = table.diagnostics(rope, scope);
+                if let Some(content) = &self.0.content {
+                    match &table.0 {
+                        TableName::Found(name, ty) => {
+                            diags.extend(content.diagnostics_for_type(rope, ty, scope));
+                        }
+                        _ => {}
+                    };
+                };
+                diags
             }
             None => vec![],
-        }
+        };
     }
 }

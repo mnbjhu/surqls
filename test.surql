@@ -1,6 +1,4 @@
-create thing
-content {
-  other: other,
-  so: a + b,
-}
-where thing == "thing" && other == "content"
+create thing content {
+  some: "",
+  other: "",
+};

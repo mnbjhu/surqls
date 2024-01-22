@@ -1,12 +1,15 @@
 use chumsky::{
     extra,
     prelude::Rich,
-    primitive::{any, choice, end, just, none_of, one_of},
-    recovery::{skip_then_retry_until, via_parser},
+    primitive::{any, choice, end, just, none_of},
+    recovery::skip_then_retry_until,
     IterParser, Parser,
 };
 use ropey::Rope;
-use tower_lsp::lsp_types::{CompletionItem, Diagnostic, Position};
+use tower_lsp::{
+    lsp_types::{CompletionItem, Diagnostic, Position},
+    Client,
+};
 
 use crate::{
     core::{
@@ -21,10 +24,7 @@ use super::{
     delcarations::ScopedItems,
     diagnostic::HasDiagnostic,
     expr::newline::optional_new_line,
-    statement::{
-        create_statement::create_statement_parser, crud_statement::crud_statement_parser,
-        statement::Statement,
-    },
+    statement::{create_statement::create_statement_parser, statement::Statement},
 };
 
 pub type File = Vec<Spanned<Statement>>;
@@ -56,10 +56,10 @@ pub fn parser<'tokens, 'src: 'tokens>(
 }
 
 impl HasDiagnostic for File {
-    fn diagnostics(&self, rope: &Rope) -> Vec<Diagnostic> {
+    fn diagnostics(&self, rope: &Rope, scope: &mut ScopedItems) -> Vec<Diagnostic> {
         let mut diagnostics = Vec::new();
         for statement in self {
-            diagnostics.extend(statement.diagnostics(rope));
+            diagnostics.extend(statement.diagnostics(rope, scope));
         }
         diagnostics
     }
@@ -83,12 +83,17 @@ impl HasCompletionItems for File {
         scope: &mut ScopedItems,
         position: Position,
         rope: &Rope,
+        client: &Client,
     ) -> Vec<CompletionItem> {
         let mut completions = Vec::new();
         for statement in self {
             let range = span_to_range(&statement.1, rope).unwrap();
             if range.start <= position && position <= range.end {
-                completions.extend(statement.0.get_completion_items(scope, position, rope));
+                completions.extend(
+                    statement
+                        .0
+                        .get_completion_items(scope, position, rope, client),
+                );
             }
         }
         completions

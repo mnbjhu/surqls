@@ -5,6 +5,7 @@ use tower_lsp::lsp_types::{Diagnostic, DiagnosticSeverity, DocumentSymbol, Symbo
 use crate::{
     core::{
         parser::{
+            delcarations::ScopedItems,
             diagnostic::HasDiagnostic,
             parser::Extra,
             parts::{
@@ -50,7 +51,7 @@ impl Symbol for Spanned<&CrudStatement> {
 }
 
 impl HasDiagnostic for Spanned<&CrudStatement> {
-    fn diagnostics(&self, rope: &Rope) -> Vec<Diagnostic> {
+    fn diagnostics(&self, rope: &Rope, scope: &mut ScopedItems) -> Vec<Diagnostic> {
         let mut not_found = Diagnostic {
             range: span_to_range(&self.1, rope).unwrap(),
             severity: Some(DiagnosticSeverity::ERROR),
@@ -60,14 +61,14 @@ impl HasDiagnostic for Spanned<&CrudStatement> {
         match &self.0.start.0 {
             StatementStart::Select(_) => vec![],
             StatementStart::Update(u) => match u {
-                Some(u) => u.diagnostics(rope),
+                Some(u) => u.diagnostics(rope, scope),
                 None => {
                     not_found.message = "INSERT statement must have a target".to_string();
                     vec![not_found]
                 }
             },
             StatementStart::Delete(d) => match d {
-                Some(d) => d.diagnostics(rope),
+                Some(d) => d.diagnostics(rope, scope),
                 None => {
                     not_found.message = "DELETE statement must have a target".to_string();
                     vec![not_found]

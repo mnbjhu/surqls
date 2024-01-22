@@ -7,7 +7,7 @@ use tower_lsp::lsp_types::{Diagnostic, DiagnosticSeverity};
 use crate::core::{
     lexer::lexer,
     parser::{
-        delcarations::{ScopedItems, Type},
+        delcarations::{Field, Object, ScopedItems, Type},
         diagnostic::HasDiagnostic,
         parser::{parser, File},
     },
@@ -28,19 +28,12 @@ pub fn parse_file<'rope>(text: String, rope: &'rope Rope) -> (Option<File>, Vec<
         });
     }
     if let Some(tokens) = tokens {
-        let mut table_definitions = HashMap::new();
-        table_definitions.insert("thing".to_string(), Type::Any);
-        let mut scoped_table = HashMap::new();
-        scoped_table.insert("some".to_string(), Type::String);
-        scoped_table.insert("other".to_string(), Type::Int);
+        let mut scope = ScopedItems::default();
         let parser_result = parser().parse_with_state(
             tokens
                 .as_slice()
                 .spanned((rope.len_chars()..rope.len_chars()).into()),
-            &mut ScopedItems {
-                table_definitions,
-                scoped_table,
-            },
+            &mut scope,
         );
         let (ast, errs) = parser_result.into_output_errors();
         for err in errs {
@@ -52,7 +45,7 @@ pub fn parse_file<'rope>(text: String, rope: &'rope Rope) -> (Option<File>, Vec<
             });
         }
         if let Some(ast) = ast {
-            diagnostics.extend(ast.diagnostics(rope));
+            diagnostics.extend(ast.diagnostics(rope, &mut scope));
             return (Some(ast), diagnostics);
         } else {
             return (None, diagnostics);

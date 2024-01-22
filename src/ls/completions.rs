@@ -7,7 +7,7 @@ use crate::core::{
     lexer::lexer,
     parser::{
         completion::HasCompletionItems,
-        delcarations::{ScopedItems, Type},
+        delcarations::{Field, Object, ScopedItems, Type},
         parser::parser,
     },
 };
@@ -21,16 +21,7 @@ pub async fn get_completions(backend: &Backend, _params: CompletionParams) -> Ve
     let text = rope.value().to_string();
     let (tokens, _) = lexer().parse(text.as_str()).into_output_errors();
     if let Some(tokens) = tokens {
-        let mut table_definitions = HashMap::new();
-        table_definitions.insert("thing".to_string(), Type::Any);
-        let mut scoped_table = HashMap::new();
-        scoped_table.insert("some".to_string(), Type::String);
-        scoped_table.insert("other".to_string(), Type::Int);
-
-        let mut scoped_items = ScopedItems {
-            table_definitions,
-            scoped_table,
-        };
+        let mut scoped_items = ScopedItems::default();
         let parser_result = parser().parse_with_state(
             tokens
                 .as_slice()
@@ -63,6 +54,7 @@ pub async fn get_completions(backend: &Backend, _params: CompletionParams) -> Ve
                 &mut scoped_items,
                 _params.text_document_position.position,
                 &rope,
+                &backend.client,
             ))
         };
     }

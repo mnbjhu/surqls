@@ -1,7 +1,8 @@
 use chumsky::{extra, prelude::Rich, select, Parser};
 use ropey::Rope;
-use tower_lsp::lsp_types::{
-    CompletionItem, CompletionItemKind, Diagnostic, DiagnosticSeverity, Position,
+use tower_lsp::{
+    lsp_types::{CompletionItem, CompletionItemKind, Diagnostic, DiagnosticSeverity, Position},
+    Client,
 };
 
 use crate::{
@@ -46,7 +47,7 @@ pub fn table_name_parser<'tokens, 'src: 'tokens>() -> impl Parser<
 }
 
 impl HasDiagnostic for Spanned<TableName> {
-    fn diagnostics(&self, rope: &Rope) -> Vec<Diagnostic> {
+    fn diagnostics(&self, rope: &Rope, scope: &mut ScopedItems) -> Vec<Diagnostic> {
         let mut not_found = Diagnostic {
             range: span_to_range(&self.1, rope).unwrap(),
             severity: Some(DiagnosticSeverity::ERROR),
@@ -69,6 +70,7 @@ impl HasCompletionItems for TableName {
         scope: &mut ScopedItems,
         position: Position,
         rope: &Rope,
+        client: &Client,
     ) -> Vec<CompletionItem> {
         scope
             .table_definitions
