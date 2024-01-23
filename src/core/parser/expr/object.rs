@@ -1,4 +1,6 @@
-use chumsky::{primitive::just, recovery::via_parser, IterParser, Parser};
+use std::collections::HashMap;
+
+use chumsky::{primitive::just, recovery::via_parser, select, IterParser, Parser};
 use ropey::Rope;
 use tower_lsp::lsp_types::{
     CompletionItem, CompletionItemKind, Diagnostic, DiagnosticSeverity, Position,
@@ -29,7 +31,12 @@ pub fn object_entry<'tokens, 'src: 'tokens>(
 ) -> impl Parser<'tokens, ParserInput<'tokens, 'src>, Spanned<ObjectEntry>, Extra<'tokens>>
        + Clone
        + 'tokens {
-    let entry = field_parser()
+    let ident = select! {
+        Token::Identifier(s) => s,
+    }
+    .map_with(|i, s| (i.to_string(), s.span()));
+    let entry = ident
+        .clone()
         .then_ignore(just(Token::Punctuation(':')).padded_by(optional_new_line()))
         .then(expr)
         .map_with(|(k, v), s| {
@@ -42,7 +49,7 @@ pub fn object_entry<'tokens, 'src: 'tokens>(
             )
         });
     entry.recover_with(via_parser(
-        field_parser()
+        ident
             .then_ignore(
                 optional_new_line()
                     .then(just(Token::Punctuation(':')))
@@ -62,7 +69,7 @@ pub fn object_entry<'tokens, 'src: 'tokens>(
 
 #[derive(Debug, Clone)]
 pub struct ObjectEntry {
-    pub key: Spanned<Field>,
+    pub key: Spanned<String>,
     pub value: Option<Spanned<Expression>>,
 }
 
@@ -105,10 +112,7 @@ impl HasCompletionItemsForType for Vec<Spanned<ObjectEntry>> {
                         let key_range = span_to_range(&key.1, rope).unwrap();
                         let current = &self
                             .into_iter()
-                            .map(|x| match &x.0.key.0 {
-                                Field::Found(name, _) => name.to_string(),
-                                Field::NotFound(name) => name.to_string(),
-                            })
+                            .map(|x| x.0.key.0.to_string())
                             .collect::<Vec<_>>();
                         let mut missing = obj.fields.clone().into_iter().collect::<Vec<_>>();
                         missing.retain(|x| !current.contains(&x.name));
@@ -158,29 +162,58 @@ impl HasDiagnosticsForType for Spanned<&Vec<Spanned<ObjectEntry>>> {
         match type_ {
             Type::Object(obj) => {
                 let mut diagnostics = vec![];
-                let current = &self
-                    .0
-                    .into_iter()
-                    .map(|x| match &x.0.key.0 {
-                        Field::Found(name, _) => name.to_string(),
-                        Field::NotFound(name) => name.to_string(),
-                    })
-                    .collect::<Vec<_>>();
                 let mut missing = obj.fields.clone().into_iter().collect::<Vec<_>>();
-                missing.retain(|x| !current.contains(&x.name));
-                if !missing.is_empty() {
-                    let missing_text = missing
-                        .iter()
-                        .map(|x| x.name.clone())
-                        .collect::<Vec<_>>()
-                        .join(", ");
-                    let diag = Diagnostic {
+                let mut defined: HashMap<String, Spanned<ObjectEntry>> = HashMap::new();
+                for entry in self.0 {
+                    let ObjectEntry { key, value } = &entry.0;
+                    missing.retain(|x| x.name != key.0);
+                    if let Some(defined_field) = obj.get_field(&key.0.to_string()) {
+                        if let Some(prev) = defined.get(&key.0) {
+                            diagnostics.push(Diagnostic {
+                                range: span_to_range(&key.1, rope).unwrap(),
+                                severity: Some(DiagnosticSeverity::ERROR),
+                                message: format!("Duplicated entry for field '{}'", key.0),
+                                ..Default::default()
+                            });
+                            diagnostics.push(Diagnostic {
+                                range: span_to_range(&prev.1, rope).unwrap(),
+                                severity: Some(DiagnosticSeverity::INFORMATION),
+                                message: format!("Field '{}' previously defined here", key.0),
+                                ..Default::default()
+                            });
+                        } else {
+                            defined.insert(key.0.clone(), entry.clone());
+                            if let Some(value) = value {
+                                diagnostics.extend(value.diagnostics_for_type(
+                                    rope,
+                                    &defined_field.ty,
+                                    scope,
+                                ));
+                            }
+                        }
+                    } else {
+                        diagnostics.push(Diagnostic {
+                            range: span_to_range(&key.1, rope).unwrap(),
+                            severity: Some(DiagnosticSeverity::ERROR),
+                            message: format!("Field {} does not exist", key.0),
+                            ..Default::default()
+                        });
+                    }
+                }
+                if missing.len() > 0 {
+                    diagnostics.push(Diagnostic {
                         range: span_to_range(&self.1, rope).unwrap(),
                         severity: Some(DiagnosticSeverity::ERROR),
-                        message: format!("Object is missing fields: {}", missing_text),
+                        message: format!(
+                            "Missing fields: {}",
+                            missing
+                                .into_iter()
+                                .map(|x| x.name)
+                                .collect::<Vec<_>>()
+                                .join(", ")
+                        ),
                         ..Default::default()
-                    };
-                    diagnostics.push(diag);
+                    });
                 }
                 diagnostics
             }

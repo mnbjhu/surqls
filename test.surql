@@ -1,4 +1,5 @@
 create thing content {
-  some: "",
-  other: "",
+  some: {
+    c: 123
+  }
 };

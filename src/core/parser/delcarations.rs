@@ -2,6 +2,8 @@ use std::{collections::HashMap, fmt::Display};
 
 #[derive(Clone, Debug)]
 pub enum Type {
+    Error,
+    Null,
     Any,
     Bool,
     Float,
@@ -60,6 +62,8 @@ impl Default for ScopedItems {
 impl Display for Type {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
+            Type::Error => write!(f, "ERROR"),
+            Type::Null => write!(f, "null"),
             Type::Any => write!(f, "any"),
             Type::Bool => write!(f, "bool"),
             Type::Float => write!(f, "float"),

@@ -26,6 +26,7 @@ use super::{
     literal::{literal_parser, Literal},
     object::{object_parser, ObjectEntry},
     op::{op_parser, BinaryOperator},
+    types::Typed,
     unary::UnaryOperator,
 };
 
@@ -243,7 +244,24 @@ impl HasDiagnosticsForType for Spanned<Expression> {
             (Expression::Object(obj), s) => {
                 (obj, s.clone()).diagnostics_for_type(rope, type_, scope)
             }
-            _ => vec![],
+            _ => {
+                let found = self.0.get_type();
+                if !found.is_assignable_to(type_) {
+                    vec![Diagnostic {
+                        range: span_to_range(&self.1, rope).unwrap(),
+                        severity: Some(tower_lsp::lsp_types::DiagnosticSeverity::ERROR),
+                        message: format!(
+                            "Expected type {}, found type {}",
+                            type_,
+                            self.0.get_type()
+                        ),
+                        related_information: None,
+                        ..Default::default()
+                    }]
+                } else {
+                    vec![]
+                }
+            }
         }
     }
 }

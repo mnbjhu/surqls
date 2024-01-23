@@ -26,7 +26,6 @@ pub enum Literal {
     Float(f64),
     Bool(bool),
     Null,
-    Invalid(Span),
 }
 
 impl Symbol for Spanned<&Literal> {
@@ -39,7 +38,6 @@ impl Symbol for Spanned<&Literal> {
                 Literal::Float(_) => SymbolKind::NUMBER,
                 Literal::Bool(_) => SymbolKind::BOOLEAN,
                 Literal::Null => SymbolKind::NULL,
-                Literal::Invalid(_) => SymbolKind::NULL,
             },
             tags: None,
             detail: None,

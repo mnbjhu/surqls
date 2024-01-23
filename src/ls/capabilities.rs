@@ -1,10 +1,10 @@
 use tower_lsp::lsp_types::{
-    CompletionOptions, DocumentFilter, ExecuteCommandOptions, InitializeResult, OneOf,
-    SemanticTokenType, SemanticTokensFullOptions, SemanticTokensLegend, SemanticTokensOptions,
-    SemanticTokensRegistrationOptions, SemanticTokensServerCapabilities, ServerCapabilities,
-    StaticRegistrationOptions, TextDocumentRegistrationOptions, TextDocumentSyncCapability,
-    TextDocumentSyncKind, WorkDoneProgressOptions, WorkspaceFoldersServerCapabilities,
-    WorkspaceServerCapabilities,
+    CodeActionProviderCapability, CompletionOptions, DocumentFilter, ExecuteCommandOptions,
+    InitializeResult, OneOf, SemanticTokenType, SemanticTokensFullOptions, SemanticTokensLegend,
+    SemanticTokensOptions, SemanticTokensRegistrationOptions, SemanticTokensServerCapabilities,
+    ServerCapabilities, StaticRegistrationOptions, TextDocumentRegistrationOptions,
+    TextDocumentSyncCapability, TextDocumentSyncKind, WorkDoneProgressOptions,
+    WorkspaceFoldersServerCapabilities, WorkspaceServerCapabilities,
 };
 
 pub const LEGEND_TYPE: &[SemanticTokenType] = &[
@@ -36,11 +36,6 @@ pub fn get_capabilities() -> InitializeResult {
                 all_commit_characters: None,
                 completion_item: None,
             }),
-            execute_command_provider: Some(ExecuteCommandOptions {
-                commands: vec!["dummy.do_something".to_string()],
-                work_done_progress_options: Default::default(),
-            }),
-
             workspace: Some(WorkspaceServerCapabilities {
                 workspace_folders: Some(WorkspaceFoldersServerCapabilities {
                     supported: Some(true),
@@ -77,6 +72,11 @@ pub fn get_capabilities() -> InitializeResult {
             definition_provider: Some(OneOf::Left(true)),
             references_provider: Some(OneOf::Left(true)),
             rename_provider: Some(OneOf::Left(true)),
+            code_action_provider: Some(CodeActionProviderCapability::Simple(true)),
+            execute_command_provider: Some(ExecuteCommandOptions {
+                commands: vec!["dummy.do_something".to_string()],
+                work_done_progress_options: Default::default(),
+            }),
             ..ServerCapabilities::default()
         },
     }

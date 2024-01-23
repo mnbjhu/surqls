@@ -6,4 +6,5 @@ pub mod newline;
 pub mod object;
 pub mod op;
 pub mod parser;
+pub mod types;
 pub mod unary;

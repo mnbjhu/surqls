@@ -3,10 +3,13 @@ use crate::core::parser::symbol::Symbol;
 use crate::ls::capabilities::get_capabilities;
 use dashmap::DashMap;
 use ropey::Rope;
+use serde_json::Value;
 use tower_lsp::jsonrpc::Result;
 use tower_lsp::lsp_types::{
-    CompletionParams, CompletionResponse, DidChangeTextDocumentParams, DidOpenTextDocumentParams,
-    DocumentSymbolParams, DocumentSymbolResponse, InitializeParams, InitializeResult, Url,
+    CodeActionOrCommand, CodeActionParams, CodeActionResponse, Command, CompletionParams,
+    CompletionResponse, DidChangeTextDocumentParams, DidOpenTextDocumentParams,
+    DocumentSymbolParams, DocumentSymbolResponse, ExecuteCommandParams, InitializeParams,
+    InitializeResult, MessageType, Url, WorkspaceEdit,
 };
 use tower_lsp::{Client, LanguageServer};
 
@@ -84,5 +87,37 @@ impl LanguageServer for Backend {
     async fn completion(&self, _params: CompletionParams) -> Result<Option<CompletionResponse>> {
         let completions = get_completions(self, _params).await;
         Ok(Some(CompletionResponse::Array(completions)))
+    }
+
+    async fn execute_command(&self, _: ExecuteCommandParams) -> Result<Option<Value>> {
+        self.client
+            .log_message(MessageType::INFO, "command executed!")
+            .await;
+
+        match self.client.apply_edit(WorkspaceEdit::default()).await {
+            Ok(res) if res.applied => {
+                self.client.show_message(MessageType::INFO, "applied").await;
+            }
+            Ok(_) => {
+                self.client
+                    .show_message(MessageType::WARNING, "rejected")
+                    .await;
+            }
+            Err(err) => {
+                self.client
+                    .show_message(MessageType::ERROR, format!("{:?}", err))
+                    .await;
+            }
+        }
+
+        Ok(None)
+    }
+
+    async fn code_action(&self, _params: CodeActionParams) -> Result<Option<CodeActionResponse>> {
+        Ok(Some(vec![CodeActionOrCommand::Command(Command {
+            title: "Apply workspace edit".to_string(),
+            command: "dummy.do_something".to_string(),
+            arguments: Some(vec![serde_json::to_value(WorkspaceEdit::default()).unwrap()]),
+        })]))
     }
 }
