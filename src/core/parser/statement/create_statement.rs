@@ -1,10 +1,6 @@
 use std::fmt::Display;
 
-use chumsky::{
-    primitive::{just, none_of},
-    recovery::via_parser,
-    Parser,
-};
+use chumsky::{primitive::just, recovery::via_parser, Parser};
 
 use crate::core::{
     lexer::{Keyword, Token},
@@ -49,9 +45,6 @@ impl Display for Transform {
 
 pub fn create_statement_parser<'tokens, 'src: 'tokens>(
 ) -> impl Parser<'tokens, ParserInput<'tokens, 'src>, CreateStatement, Extra<'tokens>> + Clone {
-    // let ident = select! {
-    //     Token::Identifier(ident)  => ident,
-    // };
     let create_part = just(Token::Keyword(Keyword::Create))
         .ignore_then(optional_new_line().ignore_then(table_name_parser()))
         .map(|x| Some(x))

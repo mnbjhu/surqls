@@ -23,8 +23,18 @@ impl Symbol for &Spanned<Statement> {
                 children: None,
             },
 
-            Statement::Return(expr) => DocumentSymbol {
+            Statement::Return(_) => DocumentSymbol {
                 name: "return".to_string(),
+                kind: SymbolKind::FUNCTION,
+                tags: None,
+                detail: None,
+                deprecated: None,
+                range: span_to_range(&self.1, rope).unwrap(),
+                selection_range: span_to_range(&self.1, rope).unwrap(),
+                children: None,
+            },
+            Statement::Define(_) => DocumentSymbol {
+                name: "define".to_string(),
                 kind: SymbolKind::FUNCTION,
                 tags: None,
                 detail: None,

@@ -22,6 +22,7 @@ impl HasDiagnostic for Spanned<Statement> {
                 message: format!("Invalid Statement: '{}'", text),
                 ..Default::default()
             }],
+            Statement::Define(_) => vec![],
         }
     }
 }

@@ -15,8 +15,8 @@ use super::{
     delcarations::ScopedItems,
     expr::newline::optional_new_line,
     statement::{
-        create_statement::create_statement_parser, return_::return_statement_parser,
-        statement::Statement,
+        create_statement::create_statement_parser, define::define_statement_parser,
+        return_::return_statement_parser, statement::Statement,
     },
 };
 
@@ -28,6 +28,7 @@ pub fn parser<'tokens, 'src: 'tokens>(
     let statement = choice((
         create_statement_parser().map(Statement::Create),
         return_statement_parser().map(Statement::Return),
+        define_statement_parser().map(Statement::Define),
     ));
     statement
         .map_with(|s, span| (s, span.span()))

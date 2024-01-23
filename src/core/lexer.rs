@@ -65,6 +65,9 @@ pub enum Keyword {
     Skip,
     Content,
     Group,
+    Full,
+    None,
+    Permissions,
 }
 
 impl Display for Keyword {
@@ -94,6 +97,9 @@ impl Display for Keyword {
             Keyword::Skip => write!(f, "skip"),
             Keyword::Content => write!(f, "content"),
             Keyword::Return => write!(f, "return"),
+            Keyword::Full => write!(f, "full"),
+            Keyword::None => write!(f, "none"),
+            Keyword::Permissions => write!(f, "permissions"),
         }
     }
 }
@@ -101,33 +107,39 @@ impl Display for Keyword {
 pub fn lexer<'a>() -> impl Parser<'a, &'a str, Vec<(Token, Span)>, extra::Err<Rich<'a, char>>> {
     let space = one_of(" \t").repeated().ignored().or_not();
     let ident = text::ident()
-        .map(|s| match s {
-            "select" => Token::Keyword(Keyword::Select),
-            "create" => Token::Keyword(Keyword::Create),
-            "insert" => Token::Keyword(Keyword::Insert),
-            "update" => Token::Keyword(Keyword::Update),
-            "delete" => Token::Keyword(Keyword::Delete),
-            "from" => Token::Keyword(Keyword::From),
-            "where" => Token::Keyword(Keyword::Where),
-            "and" => Token::Keyword(Keyword::And),
-            "or" => Token::Keyword(Keyword::Or),
-            "not" => Token::Keyword(Keyword::Not),
-            "null" => Token::Keyword(Keyword::Null),
-            "define" => Token::Keyword(Keyword::Define),
-            "table" => Token::Keyword(Keyword::Table),
-            "field" => Token::Keyword(Keyword::Field),
-            "type" => Token::Keyword(Keyword::Type),
-            "on" => Token::Keyword(Keyword::On),
-            "as" => Token::Keyword(Keyword::As),
-            "order" => Token::Keyword(Keyword::Order),
-            "by" => Token::Keyword(Keyword::By),
-            "limit" => Token::Keyword(Keyword::Limit),
-            "skip" => Token::Keyword(Keyword::Skip),
-            "content" => Token::Keyword(Keyword::Content),
-            "return" => Token::Keyword(Keyword::Return),
-            "true" => Token::Boolean(true),
-            "false" => Token::Boolean(false),
-            _ => Token::Identifier(s.to_string()),
+        .map(|s: &str| {
+            let lower = s.to_lowercase();
+            match lower.as_str() {
+                "select" => Token::Keyword(Keyword::Select),
+                "create" => Token::Keyword(Keyword::Create),
+                "insert" => Token::Keyword(Keyword::Insert),
+                "update" => Token::Keyword(Keyword::Update),
+                "delete" => Token::Keyword(Keyword::Delete),
+                "from" => Token::Keyword(Keyword::From),
+                "where" => Token::Keyword(Keyword::Where),
+                "and" => Token::Keyword(Keyword::And),
+                "or" => Token::Keyword(Keyword::Or),
+                "not" => Token::Keyword(Keyword::Not),
+                "null" => Token::Keyword(Keyword::Null),
+                "define" => Token::Keyword(Keyword::Define),
+                "table" => Token::Keyword(Keyword::Table),
+                "field" => Token::Keyword(Keyword::Field),
+                "type" => Token::Keyword(Keyword::Type),
+                "on" => Token::Keyword(Keyword::On),
+                "as" => Token::Keyword(Keyword::As),
+                "order" => Token::Keyword(Keyword::Order),
+                "by" => Token::Keyword(Keyword::By),
+                "limit" => Token::Keyword(Keyword::Limit),
+                "skip" => Token::Keyword(Keyword::Skip),
+                "content" => Token::Keyword(Keyword::Content),
+                "return" => Token::Keyword(Keyword::Return),
+                "full" => Token::Keyword(Keyword::Full),
+                "none" => Token::Keyword(Keyword::None),
+                "permissions" => Token::Keyword(Keyword::Permissions),
+                "true" => Token::Boolean(true),
+                "false" => Token::Boolean(false),
+                _ => Token::Identifier(s.to_string()),
+            }
         })
         .map_with(|t, s| (t, s.span()));
 

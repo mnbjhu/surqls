@@ -26,7 +26,7 @@ impl HasCompletionItems for Statement {
                 expr.0
                     .get_completion_items_for_type(scope, position, rope, &Type::Any)
             }
-            Statement::Invalid => vec![],
+            _ => vec![],
         }
     }
 }

@@ -5,17 +5,16 @@ use crate::core::{
     span::{ParserInput, Span, Spanned},
 };
 
+use super::parser::Extra;
+
 pub struct Type {
     pub name: Spanned<String>,
     pub args: Vec<Spanned<String>>,
 }
 
-pub fn type_parser<'tokens, 'src: 'tokens>() -> impl Parser<
-    'tokens,
-    ParserInput<'tokens, 'src>,
-    Spanned<Type>,
-    extra::Err<Rich<'tokens, Token, Span>>,
-> + Clone {
+pub fn type_parser<'tokens, 'src: 'tokens>(
+) -> impl Parser<'tokens, ParserInput<'tokens, 'src>, Spanned<Type>, Extra<'tokens>> + Clone + 'tokens
+{
     let ident = select!(
         Token::Identifier(ident) => ident,
     )
