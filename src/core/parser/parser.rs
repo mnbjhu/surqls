@@ -1,30 +1,23 @@
 use chumsky::{
     extra,
     prelude::Rich,
-    primitive::{any, choice, end, just, none_of},
+    primitive::{any, choice, end, just},
     recovery::skip_then_retry_until,
     IterParser, Parser,
 };
-use ropey::Rope;
-use tower_lsp::{
-    lsp_types::{CompletionItem, Diagnostic, Position},
-    Client,
-};
 
-use crate::{
-    core::{
-        lexer::{Keyword, Token},
-        span::{ParserInput, Span, Spanned},
-    },
-    ls::util::range::span_to_range,
+use crate::core::{
+    lexer::{Keyword, Token},
+    span::{ParserInput, Span, Spanned},
 };
 
 use super::{
-    completion::HasCompletionItems,
     delcarations::ScopedItems,
-    diagnostic::HasDiagnostic,
     expr::newline::optional_new_line,
-    statement::{create_statement::create_statement_parser, statement::Statement},
+    statement::{
+        create_statement::create_statement_parser, return_::return_statement_parser,
+        statement::Statement,
+    },
 };
 
 pub type File = Vec<Spanned<Statement>>;
@@ -32,7 +25,10 @@ pub type Extra<'tokens> = extra::Full<Rich<'tokens, Token, Span>, ScopedItems, (
 
 pub fn parser<'tokens, 'src: 'tokens>(
 ) -> impl Parser<'tokens, ParserInput<'tokens, 'src>, File, Extra<'tokens>> + Clone {
-    let statement = choice((create_statement_parser().map(Statement::Create),));
+    let statement = choice((
+        create_statement_parser().map(Statement::Create),
+        return_statement_parser().map(Statement::Return),
+    ));
     statement
         .map_with(|s, span| (s, span.span()))
         // .recover_with(via_parser(invalid_statement_parser()))
@@ -53,49 +49,4 @@ pub fn parser<'tokens, 'src: 'tokens>(
         .allow_trailing()
         .collect::<Vec<_>>()
         .padded_by(optional_new_line())
-}
-
-impl HasDiagnostic for File {
-    fn diagnostics(&self, rope: &Rope, scope: &mut ScopedItems) -> Vec<Diagnostic> {
-        let mut diagnostics = Vec::new();
-        for statement in self {
-            diagnostics.extend(statement.diagnostics(rope, scope));
-        }
-        diagnostics
-    }
-}
-pub fn invalid_statement_parser<'tokens, 'src: 'tokens>(
-) -> impl Parser<'tokens, ParserInput<'tokens, 'src>, Spanned<Statement>, Extra<'tokens>> + Clone {
-    let other = none_of(vec![
-        Token::Keyword(Keyword::Create),
-        Token::Keyword(Keyword::Select),
-        Token::Keyword(Keyword::Update),
-        Token::Keyword(Keyword::Delete),
-        Token::Punctuation(';'),
-    ]);
-    let invalid = other.clone().then_ignore(other).map(|_| Statement::Invalid);
-    optional_new_line().ignore_then(invalid.map_with(|s, span| (s, span.span())))
-}
-
-impl HasCompletionItems for File {
-    fn get_completion_items(
-        &self,
-        scope: &mut ScopedItems,
-        position: Position,
-        rope: &Rope,
-        client: &Client,
-    ) -> Vec<CompletionItem> {
-        let mut completions = Vec::new();
-        for statement in self {
-            let range = span_to_range(&statement.1, rope).unwrap();
-            if range.start <= position && position <= range.end {
-                completions.extend(
-                    statement
-                        .0
-                        .get_completion_items(scope, position, rope, client),
-                );
-            }
-        }
-        completions
-    }
 }

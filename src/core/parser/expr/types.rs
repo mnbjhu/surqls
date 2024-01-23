@@ -28,7 +28,7 @@ impl Type {
             (_, Type::Error) => true,
             (Type::Null, Type::Null) => true,
             (Type::Any, _) => true,
-            (_, Type::Any) => true,
+            (_, Type::Any) => false,
             (Type::Bool, Type::Bool) => true,
             (Type::Float, Type::Float) => true,
             (Type::Int, Type::Int) => true,

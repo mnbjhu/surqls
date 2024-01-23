@@ -3,7 +3,7 @@ use std::fmt::Display;
 use chumsky::{
     extra,
     prelude::Rich,
-    primitive::{choice, end, just, none_of, one_of},
+    primitive::{choice, just, none_of, one_of},
     recovery::via_parser,
     text, IterParser, Parser,
 };
@@ -56,6 +56,7 @@ pub enum Keyword {
     Table,
     Field,
     Type,
+    Return,
     On,
     As,
     Order,
@@ -92,6 +93,7 @@ impl Display for Keyword {
             Keyword::Limit => write!(f, "limit"),
             Keyword::Skip => write!(f, "skip"),
             Keyword::Content => write!(f, "content"),
+            Keyword::Return => write!(f, "return"),
         }
     }
 }
@@ -122,6 +124,7 @@ pub fn lexer<'a>() -> impl Parser<'a, &'a str, Vec<(Token, Span)>, extra::Err<Ri
             "limit" => Token::Keyword(Keyword::Limit),
             "skip" => Token::Keyword(Keyword::Skip),
             "content" => Token::Keyword(Keyword::Content),
+            "return" => Token::Keyword(Keyword::Return),
             "true" => Token::Boolean(true),
             "false" => Token::Boolean(false),
             _ => Token::Identifier(s.to_string()),

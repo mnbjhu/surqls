@@ -1,18 +1,12 @@
 use chumsky::{
-    extra,
-    prelude::Rich,
-    primitive::{choice, just, one_of},
-    select, IterParser, Parser,
+    primitive::{choice, just},
+    select, Parser,
 };
-use tower_lsp::lsp_types::{DocumentSymbol, SymbolKind};
 
-use crate::{
-    core::{
-        lexer::Token,
-        parser::{parser::Extra, symbol::Symbol},
-        span::{ParserInput, Span, Spanned},
-    },
-    ls::util::range::span_to_range,
+use crate::core::{
+    lexer::Token,
+    parser::parser::Extra,
+    span::{ParserInput, Spanned},
 };
 
 use super::{newline::optional_new_line, parser::Expression};
@@ -74,22 +68,4 @@ pub fn access_parser<'tokens, 'src: 'tokens>(
         .boxed();
 
     access
-}
-
-impl Symbol for Spanned<Box<Access>> {
-    fn get_document_symbol(&self, rope: &ropey::Rope) -> DocumentSymbol {
-        match &self.0.as_ref() {
-            Access::Property(s) => DocumentSymbol {
-                name: s.clone(),
-                kind: SymbolKind::FIELD,
-                range: span_to_range(&self.1, rope).unwrap(),
-                selection_range: span_to_range(&self.1, rope).unwrap(),
-                children: None,
-                detail: None,
-                deprecated: None,
-                tags: None,
-            },
-            Access::Index(index) => index.get_document_symbol(rope),
-        }
-    }
 }

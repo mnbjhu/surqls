@@ -1,23 +1,11 @@
 use chumsky::{extra, prelude::Rich, select, Parser};
-use ropey::Rope;
-use tower_lsp::{
-    lsp_types::{CompletionItem, CompletionItemKind, Diagnostic, DiagnosticSeverity, Position},
-    Client,
+
+use crate::core::{
+    lexer::Token,
+    span::{ParserInput, Span, Spanned},
 };
 
-use crate::{
-    core::{
-        lexer::Token,
-        span::{ParserInput, Span, Spanned},
-    },
-    ls::util::range::span_to_range,
-};
-
-use super::{
-    completion::HasCompletionItems,
-    delcarations::{ScopedItems, Type},
-    diagnostic::HasDiagnostic,
-};
+use super::delcarations::{ScopedItems, Type};
 
 #[derive(Clone, Debug)]
 pub enum TableName {
@@ -44,43 +32,4 @@ pub fn table_name_parser<'tokens, 'src: 'tokens>() -> impl Parser<
             }
         })
         .map_with(|s, span| (s, span.span()))
-}
-
-impl HasDiagnostic for Spanned<TableName> {
-    fn diagnostics(&self, rope: &Rope, scope: &mut ScopedItems) -> Vec<Diagnostic> {
-        let mut not_found = Diagnostic {
-            range: span_to_range(&self.1, rope).unwrap(),
-            severity: Some(DiagnosticSeverity::ERROR),
-            related_information: None,
-            ..Default::default()
-        };
-        match &self.0 {
-            TableName::NotFound(name) => {
-                not_found.message = format!("Table '{}' not found", name);
-                vec![not_found]
-            }
-            TableName::Found(_, _) => vec![],
-        }
-    }
-}
-
-impl HasCompletionItems for TableName {
-    fn get_completion_items(
-        &self,
-        scope: &mut ScopedItems,
-        position: Position,
-        rope: &Rope,
-        client: &Client,
-    ) -> Vec<CompletionItem> {
-        scope
-            .table_definitions
-            .iter()
-            .map(|(name, ty)| CompletionItem {
-                label: name.to_string(),
-                detail: Some(ty.to_string()),
-                kind: Some(CompletionItemKind::STRUCT),
-                ..Default::default()
-            })
-            .collect()
-    }
 }

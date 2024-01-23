@@ -1,5 +1,5 @@
 use crate::core::parser::parser::File;
-use crate::core::parser::symbol::Symbol;
+use crate::features::symbols::Symbol;
 use crate::ls::capabilities::get_capabilities;
 use dashmap::DashMap;
 use ropey::Rope;
@@ -93,6 +93,7 @@ impl LanguageServer for Backend {
         self.client
             .log_message(MessageType::INFO, "command executed!")
             .await;
+        self.client.inline_value_refresh().await.unwrap();
 
         match self.client.apply_edit(WorkspaceEdit::default()).await {
             Ok(res) if res.applied => {

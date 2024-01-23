@@ -1,15 +1,12 @@
-use std::collections::HashMap;
-
 use chumsky::{error::RichPattern, prelude::Input, Parser};
 use tower_lsp::lsp_types::{CompletionItem, CompletionItemKind, CompletionParams};
 
-use crate::core::{
-    lexer::lexer,
-    parser::{
-        completion::HasCompletionItems,
-        delcarations::{Field, Object, ScopedItems, Type},
-        parser::parser,
+use crate::{
+    core::{
+        lexer::lexer,
+        parser::{delcarations::ScopedItems, parser::parser},
     },
+    features::completions::has_completions::HasCompletionItems,
 };
 
 use super::{backend::Backend, util::range::span_to_range};

@@ -1,10 +1,6 @@
-use chumsky::{extra, prelude::Rich, primitive::just, Parser};
+use chumsky::{primitive::just, Parser};
 
-use crate::core::{
-    lexer::Token,
-    parser::parser::Extra,
-    span::{ParserInput, Span},
-};
+use crate::core::{lexer::Token, parser::parser::Extra, span::ParserInput};
 
 pub fn optional_new_line<'tokens, 'src: 'tokens>(
 ) -> impl Parser<'tokens, ParserInput<'tokens, 'src>, (), Extra<'tokens>> + Clone {

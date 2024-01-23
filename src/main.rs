@@ -6,6 +6,7 @@ use crate::cli::lex::lex;
 
 mod cli;
 mod core;
+mod features;
 mod ls;
 
 #[tokio::main]

@@ -1,5 +1,7 @@
 create thing content {
-  some: {
-    c: 123
-  }
+  some: "Thing",
 };
+
+return "thing"
+
+return thing

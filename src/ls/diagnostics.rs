@@ -1,16 +1,16 @@
-use std::collections::HashMap;
-
 use chumsky::{prelude::Input, Parser};
 use ropey::Rope;
 use tower_lsp::lsp_types::{Diagnostic, DiagnosticSeverity};
 
-use crate::core::{
-    lexer::lexer,
-    parser::{
-        delcarations::{Field, Object, ScopedItems, Type},
-        diagnostic::HasDiagnostic,
-        parser::{parser, File},
+use crate::{
+    core::{
+        lexer::lexer,
+        parser::{
+            delcarations::ScopedItems,
+            parser::{parser, File},
+        },
     },
+    features::diagnostics::diagnostic::HasDiagnostic,
 };
 
 use super::util::range::span_to_range;

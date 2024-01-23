@@ -1,16 +1,14 @@
 use std::fmt::Display;
 
 use chumsky::{
-    extra,
-    prelude::Rich,
     primitive::{choice, just},
-    select, Parser,
+    Parser,
 };
 
 use crate::core::{
     lexer::Token,
     parser::parser::Extra,
-    span::{ParserInput, Span, Spanned},
+    span::{ParserInput, Spanned},
 };
 
 use super::{newline::optional_new_line, parser::Expression, unary::UnaryOperator};
@@ -30,7 +28,6 @@ pub enum BinaryOperator {
     GreaterThanOrEqual,
     And,
     Or,
-    Invalid { recovered: Span },
 }
 
 impl Display for BinaryOperator {
@@ -49,9 +46,6 @@ impl Display for BinaryOperator {
             BinaryOperator::LessThanOrEqual => "<=",
             BinaryOperator::And => "&&",
             BinaryOperator::Or => "||",
-            BinaryOperator::Invalid { recovered } => {
-                return write!(f, "Invalid binary operator: {}", recovered)
-            }
         };
         write!(f, "{}", s)
     }

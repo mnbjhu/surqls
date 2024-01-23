@@ -77,6 +77,7 @@ pub fn get_capabilities() -> InitializeResult {
                 commands: vec!["dummy.do_something".to_string()],
                 work_done_progress_options: Default::default(),
             }),
+            inline_value_provider: Some(OneOf::Left(true)),
             ..ServerCapabilities::default()
         },
     }
