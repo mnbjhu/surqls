@@ -36,7 +36,10 @@ impl Symbol for Spanned<&CreateStatement> {
             });
         }
         DocumentSymbol {
-            name: format!("CREATE {:?}", self.0.table),
+            name: format!(
+                "CREATE {}",
+                self.0.table.clone().map(|x| x.0).unwrap_or("".to_string())
+            ),
             kind: SymbolKind::STRUCT,
             tags: None,
             detail: None,

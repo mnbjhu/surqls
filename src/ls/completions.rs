@@ -18,7 +18,7 @@ pub async fn get_completions(backend: &Backend, _params: CompletionParams) -> Ve
     let text = rope.value().to_string();
     let (tokens, _) = lexer().parse(text.as_str()).into_output_errors();
     if let Some(tokens) = tokens {
-        let mut scoped_items = ScopedItems::default();
+        let mut scoped_items = backend.state.lock().await;
         let parser_result = parser().parse_with_state(
             tokens
                 .as_slice()

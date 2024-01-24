@@ -1,11 +1,11 @@
-create thing content {
-  some: "Thing",
+create todo content {
+  done: false,
+  title: "My first todo",
+  data: {
+    part1: 1
+  }
 };
 
-return "thing";
-return thing;
-
-define table thing permissions full
-define field some on thing 
-type string
-permissions full
+create thing content {
+  some: "Thing"
+}

@@ -36,15 +36,15 @@ pub fn define_field_parser<'tokens, 'src: 'tokens>(
         .ignore_then(optional_new_line().ignore_then(type_parser()));
 
     just(Token::Keyword(Keyword::Field))
-        .ignore_then(ident.clone())
+        .ignore_then(parents)
+        .then(ident.clone())
         .then_ignore(just(Token::Keyword(Keyword::On)))
         .then_ignore(just(Token::Keyword(Keyword::Table)).or_not())
-        .then(parents)
         .then(ident)
         .then(optional_new_line().ignore_then(type_))
         .then(optional_new_line().ignore_then(permission_parser().or_not()))
         .map(
-            |((((name, parents), table_name), type_), permission)| DefineField {
+            |((((parents, name), table_name), type_), permission)| DefineField {
                 name,
                 parents,
                 table_name,

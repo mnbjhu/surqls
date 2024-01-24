@@ -1,0 +1,5 @@
+[connection]
+host = "localhost"
+port = 8000
+user = "root"
+pass = "root"

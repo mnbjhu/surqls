@@ -1,5 +1,9 @@
+use std::sync::Arc;
+
+use crate::core::parser::delcarations::ScopedItems;
 use crate::ls::backend::Backend;
 use dashmap::DashMap;
+use tokio::sync::Mutex;
 use tower_lsp::LspService;
 use tower_lsp::Server;
 
@@ -14,6 +18,7 @@ pub async fn launch_server() {
         document_map: DashMap::new(),
         properties: DashMap::new(),
         ast_map: DashMap::new(),
+        state: Arc::new(Mutex::new(ScopedItems::default())),
     })
     .finish();
     Server::new(stdin, stdout, socket).serve(service).await;

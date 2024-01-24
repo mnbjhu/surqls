@@ -15,7 +15,11 @@ use crate::{
 
 use super::util::range::span_to_range;
 
-pub fn parse_file<'rope>(text: String, rope: &'rope Rope) -> (Option<File>, Vec<Diagnostic>) {
+pub fn parse_file<'rope>(
+    text: String,
+    rope: &'rope Rope,
+    mut scope: &mut ScopedItems,
+) -> (Option<File>, Vec<Diagnostic>) {
     let token_result = lexer().parse(text.as_str());
     let (tokens, errs) = token_result.into_output_errors();
     let mut diagnostics = vec![];
@@ -28,7 +32,6 @@ pub fn parse_file<'rope>(text: String, rope: &'rope Rope) -> (Option<File>, Vec<
         });
     }
     if let Some(tokens) = tokens {
-        let mut scope = ScopedItems::default();
         let parser_result = parser().parse_with_state(
             tokens
                 .as_slice()

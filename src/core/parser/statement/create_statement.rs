@@ -1,6 +1,6 @@
 use std::fmt::Display;
 
-use chumsky::{primitive::just, recovery::via_parser, Parser};
+use chumsky::{primitive::just, recovery::via_parser, select, Parser};
 
 use crate::core::{
     lexer::{Keyword, Token},
@@ -10,13 +10,12 @@ use crate::core::{
             parser::{expr_parser, Expression},
         },
         parser::Extra,
-        table_name::{table_name_parser, TableName},
     },
     span::{ParserInput, Spanned},
 };
 
 pub struct CreateStatement {
-    pub table: Option<Spanned<TableName>>,
+    pub table: Option<Spanned<String>>,
     pub content: Option<Spanned<Expression>>,
     pub transforms: Vec<Spanned<Transform>>,
 }
@@ -45,8 +44,12 @@ impl Display for Transform {
 
 pub fn create_statement_parser<'tokens, 'src: 'tokens>(
 ) -> impl Parser<'tokens, ParserInput<'tokens, 'src>, CreateStatement, Extra<'tokens>> + Clone {
+    let ident = select! {
+        Token::Identifier(s) => s,
+    }
+    .map_with(|x, s| (x, s.span()));
     let create_part = just(Token::Keyword(Keyword::Create))
-        .ignore_then(optional_new_line().ignore_then(table_name_parser()))
+        .ignore_then(optional_new_line().ignore_then(ident))
         .map(|x| Some(x))
         .recover_with(via_parser(
             just(Token::Keyword(Keyword::Create)).map(|_| None),
