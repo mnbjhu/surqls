@@ -1,9 +1,12 @@
 use std::sync::Arc;
 
-use crate::core::parser::delcarations::ScopedItems;
-use crate::core::parser::parser::File;
+use crate::ast::parser::File;
+use crate::declarations::scoped_item::ScopedItems;
+use crate::features::completions::completions::get_completions;
+use crate::features::diagnostics::diagnostic::parse_file;
 use crate::features::symbols::Symbol;
 use crate::ls::capabilities::get_capabilities;
+use crate::util::range::span_to_range;
 use dashmap::DashMap;
 use ropey::Rope;
 use serde_json::Value;
@@ -17,8 +20,6 @@ use tower_lsp::lsp_types::{
 };
 use tower_lsp::{Client, LanguageServer};
 
-use super::completions::get_completions;
-use super::diagnostics::parse_file;
 use super::properties::{get_table_defs, parse_config};
 
 pub struct Backend {
@@ -140,16 +141,40 @@ impl LanguageServer for Backend {
                     .show_message(MessageType::INFO, "Definitions Refreshed")
                     .await;
             }
+            "db.run" => {
+                let params: CodeActionParams =
+                    serde_json::from_value(params.arguments[0].clone()).unwrap();
+                let uri = params.text_document.uri;
+                let rope = self.document_map.get(uri.to_string().as_str()).unwrap();
+                let ast = self.ast_map.get(uri.to_string().as_str());
+                for (_, span) in ast.unwrap().value() {
+                    let range = span_to_range(span, &rope.value()).unwrap();
+                    if range.start <= params.range.start && params.range.start <= range.end {
+                        let query = rope.slice((span.start)..(span.end)).to_string();
+                        self.client
+                            .show_message(MessageType::ERROR, format!("{}", query))
+                            .await;
+                    }
+                }
+            }
             _ => {}
         }
         Ok(None)
     }
 
     async fn code_action(&self, _params: CodeActionParams) -> Result<Option<CodeActionResponse>> {
-        Ok(Some(vec![CodeActionOrCommand::Command(Command {
+        let refresh = CodeActionOrCommand::Command(Command {
             title: "Sync Definitions With Database".to_string(),
             command: "db.refresh".to_string(),
             arguments: Some(vec![serde_json::to_value(WorkspaceEdit::default()).unwrap()]),
-        })]))
+        });
+
+        let run = CodeActionOrCommand::Command(Command {
+            title: "Run Query".to_string(),
+            command: "db.run".to_string(),
+            arguments: Some(vec![serde_json::to_value(_params).unwrap()]),
+        });
+
+        Ok(Some(vec![refresh, run]))
     }
 }

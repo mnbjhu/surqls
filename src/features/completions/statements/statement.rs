@@ -5,10 +5,8 @@ use tower_lsp::{
 };
 
 use crate::{
-    core::parser::{
-        delcarations::{ScopedItems, Type},
-        statement::statement::Statement,
-    },
+    ast::statement::statement::Statement,
+    declarations::{scoped_item::ScopedItems, type_::Type},
     features::completions::has_completions::{HasCompletionItems, HasCompletionItemsForType},
 };
 

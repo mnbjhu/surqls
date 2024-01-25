@@ -5,8 +5,7 @@ use tower_lsp::{
 };
 
 use crate::{
-    core::parser::{delcarations::ScopedItems, parser::File},
-    ls::util::range::span_to_range,
+    ast::parser::File, declarations::scoped_item::ScopedItems, util::range::span_to_range,
 };
 
 use super::has_completions::HasCompletionItems;

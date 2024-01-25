@@ -2,8 +2,8 @@ use ropey::Rope;
 use tower_lsp::lsp_types::{Diagnostic, DiagnosticSeverity};
 
 use crate::{
-    core::{parser::delcarations::ScopedItems, span::Span},
-    ls::util::range::span_to_range,
+    declarations::scoped_item::ScopedItems,
+    util::{range::span_to_range, span::Span},
 };
 
 pub fn diagnostics_for_table_name(

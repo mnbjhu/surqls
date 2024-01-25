@@ -74,7 +74,7 @@ pub fn get_capabilities() -> InitializeResult {
             rename_provider: Some(OneOf::Left(true)),
             code_action_provider: Some(CodeActionProviderCapability::Simple(true)),
             execute_command_provider: Some(ExecuteCommandOptions {
-                commands: vec!["db.refresh".to_string()],
+                commands: vec!["db.refresh".to_string(), "db.run".to_string()],
                 work_done_progress_options: Default::default(),
             }),
             inline_value_provider: Some(OneOf::Left(true)),

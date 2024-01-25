@@ -1,0 +1,66 @@
+use std::fmt::Display;
+
+#[derive(Debug, Clone, PartialEq)]
+pub enum Keyword {
+    Select,
+    Create,
+    Insert,
+    Update,
+    Delete,
+    From,
+    Where,
+    And,
+    Or,
+    Not,
+    Null,
+    Define,
+    Table,
+    Field,
+    Type,
+    Return,
+    On,
+    As,
+    Order,
+    By,
+    Limit,
+    Skip,
+    Content,
+    Group,
+    Full,
+    None,
+    Permissions,
+}
+
+impl Display for Keyword {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Keyword::Select => write!(f, "select"),
+            Keyword::Create => write!(f, "create"),
+            Keyword::Insert => write!(f, "insert"),
+            Keyword::Update => write!(f, "update"),
+            Keyword::Delete => write!(f, "delete"),
+            Keyword::From => write!(f, "from"),
+            Keyword::Where => write!(f, "where"),
+            Keyword::And => write!(f, "and"),
+            Keyword::Or => write!(f, "or"),
+            Keyword::Not => write!(f, "not"),
+            Keyword::Null => write!(f, "null"),
+            Keyword::Define => write!(f, "define"),
+            Keyword::Table => write!(f, "table"),
+            Keyword::Field => write!(f, "field"),
+            Keyword::Type => write!(f, "type"),
+            Keyword::On => write!(f, "on"),
+            Keyword::As => write!(f, "as"),
+            Keyword::Order => write!(f, "order"),
+            Keyword::By => write!(f, "by"),
+            Keyword::Group => write!(f, "group"),
+            Keyword::Limit => write!(f, "limit"),
+            Keyword::Skip => write!(f, "skip"),
+            Keyword::Content => write!(f, "content"),
+            Keyword::Return => write!(f, "return"),
+            Keyword::Full => write!(f, "full"),
+            Keyword::None => write!(f, "none"),
+            Keyword::Permissions => write!(f, "permissions"),
+        }
+    }
+}

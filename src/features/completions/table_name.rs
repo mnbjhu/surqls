@@ -1,10 +1,10 @@
 use tower_lsp::lsp_types::{CompletionItem, CompletionItemKind};
 
-use crate::core::parser::delcarations::ScopedItems;
+use crate::declarations::scoped_item::ScopedItems;
 
 pub fn get_completion_items_for_table_name(
     scope: &mut ScopedItems,
-    name: &str,
+    _: &str,
 ) -> Vec<CompletionItem> {
     scope
         .table_definitions

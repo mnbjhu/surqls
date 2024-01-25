@@ -2,10 +2,8 @@ use ropey::Rope;
 use tower_lsp::lsp_types::{CompletionItem, Position};
 
 use crate::{
-    core::parser::{
-        delcarations::{ScopedItems, Type},
-        expr::parser::Expression,
-    },
+    ast::expr::parser::Expression,
+    declarations::{scoped_item::ScopedItems, type_::Type},
     features::completions::has_completions::HasCompletionItemsForType,
 };
 

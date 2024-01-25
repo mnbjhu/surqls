@@ -2,14 +2,10 @@ use ropey::Rope;
 use tower_lsp::lsp_types::Diagnostic;
 
 use crate::{
-    core::{
-        parser::{
-            delcarations::{ScopedItems, Type},
-            statement::create_statement::CreateStatement,
-        },
-        span::Spanned,
-    },
+    ast::statement::create::CreateStatement,
+    declarations::{scoped_item::ScopedItems, type_::Type},
     features::diagnostics::diagnostic::{HasDiagnostic, HasDiagnosticsForType},
+    util::span::Spanned,
 };
 
 use super::table_name::diagnostics_for_table_name;

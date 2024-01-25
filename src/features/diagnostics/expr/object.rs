@@ -4,15 +4,10 @@ use ropey::Rope;
 use tower_lsp::lsp_types::{Diagnostic, DiagnosticSeverity};
 
 use crate::{
-    core::{
-        parser::{
-            delcarations::{ScopedItems, Type},
-            expr::object::ObjectEntry,
-        },
-        span::Spanned,
-    },
+    ast::expr::object::ObjectEntry,
+    declarations::{scoped_item::ScopedItems, type_::Type},
     features::diagnostics::diagnostic::HasDiagnosticsForType,
-    ls::util::range::span_to_range,
+    util::{range::span_to_range, span::Spanned},
 };
 
 impl HasDiagnosticsForType for Spanned<&Vec<Spanned<ObjectEntry>>> {
@@ -21,7 +16,7 @@ impl HasDiagnosticsForType for Spanned<&Vec<Spanned<ObjectEntry>>> {
         rope: &Rope,
         type_: &Type,
         scope: &mut ScopedItems,
-    ) -> Vec<tower_lsp::lsp_types::Diagnostic> {
+    ) -> Vec<Diagnostic> {
         match type_ {
             Type::Object(obj) => {
                 let mut diagnostics = vec![];

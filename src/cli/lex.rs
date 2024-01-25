@@ -3,7 +3,7 @@ use std::{fs, ops::Range, path::PathBuf};
 use chumsky::Parser;
 use colored::{ColoredString, Colorize};
 
-use crate::core::lexer::{lexer, Token};
+use crate::lexer::{lexer::lexer, token::Token};
 
 pub fn lex(file: PathBuf) {
     println!("Lexing file: {:?}", file);

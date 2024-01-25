@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use crate::core::parser::delcarations::ScopedItems;
+use crate::declarations::scoped_item::ScopedItems;
 use crate::ls::backend::Backend;
 use dashmap::DashMap;
 use tokio::sync::Mutex;

@@ -1,3 +1,4 @@
+pub mod completions;
 pub mod expr;
 pub mod file;
 pub mod has_completions;

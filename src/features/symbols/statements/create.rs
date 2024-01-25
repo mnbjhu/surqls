@@ -2,9 +2,9 @@ use ropey::Rope;
 use tower_lsp::lsp_types::{DocumentSymbol, SymbolKind};
 
 use crate::{
-    core::{parser::statement::create_statement::CreateStatement, span::Spanned},
+    ast::statement::create::CreateStatement,
     features::symbols::Symbol,
-    ls::util::range::span_to_range,
+    util::{range::span_to_range, span::Spanned},
 };
 
 impl Symbol for Spanned<&CreateStatement> {

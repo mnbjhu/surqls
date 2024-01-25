@@ -4,15 +4,14 @@ use chumsky::{input::Input, Parser};
 use serde::Deserialize;
 use tower_lsp::lsp_types::MessageType;
 
-use crate::core::{
-    lexer::lexer,
-    parser::{
-        delcarations::{Field, Object, ScopedItems, Type},
-        parser::parser,
-        statement::{define::DefineStatement, statement::Statement},
-        type_::Type as AstType,
-    },
-};
+use crate::ast::statement::define::DefineStatement;
+use crate::ast::statement::statement::Statement;
+use crate::ast::type_::Type as AstType;
+use crate::declarations::field::Field;
+use crate::declarations::object::Object;
+use crate::declarations::scoped_item::ScopedItems;
+use crate::declarations::type_::Type;
+use crate::{lexer::lexer::lexer, parser::parser::parser};
 
 use super::backend::Backend;
 
@@ -207,24 +206,9 @@ pub async fn parse_table_defs(
                     .collect::<Vec<_>>()
                     .join(".");
                 if parent == parents {
-                    let AstType { name, args } = &field.type_.0;
-                    let type_ = match name.0.as_str() {
-                        "string" => Type::String,
-                        "int" => Type::Int,
-                        "float" => Type::Float,
-                        "bool" => Type::Bool,
-                        "object" => {
-                            let new_parents = match parent.as_str() {
-                                "" => field.name.0.clone(),
-                                _ => format!("{}.{}", parent, field.name.0),
-                            };
-                            parse_table_defs(statements, new_parents, backend).await
-                        }
-                        _ => Type::Error,
-                    };
                     fields.push(Field {
                         name: field.name.0.clone(),
-                        ty: type_,
+                        ty: parse_declared_type(&field.type_.0),
                     });
                 }
             }
@@ -232,4 +216,35 @@ pub async fn parse_table_defs(
         }
     }
     Type::Object(Object { fields })
+}
+
+fn parse_declared_type(AstType { name, args }: &AstType) -> Type {
+    match name.0.as_str() {
+        "string" => Type::String,
+        "int" => Type::Int,
+        "float" => Type::Float,
+        "boolean" => Type::Bool,
+        "null" => Type::Null,
+        "any" => Type::Any,
+        "array" => {
+            if args.len() != 1 {
+                Type::Error
+            } else {
+                Type::Array(Box::new(parse_declared_type(&args[0].0)))
+            }
+        }
+        "object" => Type::Object(Object {
+            fields: args
+                .iter()
+                .map(|arg| {
+                    let AstType { name, args: _ } = &arg.0;
+                    Field {
+                        name: name.0.clone(),
+                        ty: parse_declared_type(&arg.0),
+                    }
+                })
+                .collect::<Vec<_>>(),
+        }),
+        _ => Type::Any,
+    }
 }

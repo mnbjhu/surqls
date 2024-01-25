@@ -1,7 +1,7 @@
 use ropey::Rope;
 use tower_lsp::lsp_types::Diagnostic;
 
-use crate::core::parser::{delcarations::ScopedItems, parser::File};
+use crate::{ast::parser::File, declarations::scoped_item::ScopedItems};
 
 use super::diagnostic::HasDiagnostic;
 

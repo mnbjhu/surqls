@@ -2,15 +2,10 @@ use ropey::Rope;
 use tower_lsp::lsp_types::Diagnostic;
 
 use crate::{
-    core::{
-        parser::{
-            delcarations::{ScopedItems, Type},
-            expr::{parser::Expression, types::Typed},
-        },
-        span::Spanned,
-    },
+    ast::expr::{parser::Expression, types::Typed},
+    declarations::{scoped_item::ScopedItems, type_::Type},
     features::diagnostics::diagnostic::{HasDiagnostic, HasDiagnosticsForType},
-    ls::util::range::span_to_range,
+    util::{range::span_to_range, span::Spanned},
 };
 
 impl HasDiagnostic for Spanned<Expression> {
@@ -29,6 +24,9 @@ impl HasDiagnosticsForType for Spanned<Expression> {
         match &self {
             (Expression::Object(obj), s) => {
                 (obj, s.clone()).diagnostics_for_type(rope, type_, scope)
+            }
+            (Expression::Array(arr), s) => {
+                (arr, s.clone()).diagnostics_for_type(rope, type_, scope)
             }
             _ => {
                 let found = &self.0.get_type();

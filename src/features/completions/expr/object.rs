@@ -1,15 +1,10 @@
 use tower_lsp::lsp_types::{CompletionItem, CompletionItemKind, Position};
 
 use crate::{
-    core::{
-        parser::{
-            delcarations::{ScopedItems, Type},
-            expr::object::ObjectEntry,
-        },
-        span::Spanned,
-    },
+    ast::expr::object::ObjectEntry,
+    declarations::{scoped_item::ScopedItems, type_::Type},
     features::completions::has_completions::HasCompletionItemsForType,
-    ls::util::range::span_to_range,
+    util::{range::span_to_range, span::Spanned},
 };
 
 impl HasCompletionItemsForType for Vec<Spanned<ObjectEntry>> {

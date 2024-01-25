@@ -4,10 +4,14 @@ use ls::server::launch_server;
 
 use crate::cli::lex::lex;
 
+mod ast;
 mod cli;
-mod core;
+mod declarations;
 mod features;
+mod lexer;
 mod ls;
+mod parser;
+mod util;
 
 #[tokio::main]
 async fn main() {

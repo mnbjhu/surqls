@@ -5,12 +5,13 @@ use tower_lsp::{
 };
 
 use crate::{
-    core::parser::{delcarations::ScopedItems, statement::create_statement::CreateStatement},
+    ast::statement::create::CreateStatement,
+    declarations::scoped_item::ScopedItems,
     features::completions::{
         has_completions::{HasCompletionItems, HasCompletionItemsForType},
         table_name::get_completion_items_for_table_name,
     },
-    ls::util::range::span_to_range,
+    util::range::span_to_range,
 };
 
 impl HasCompletionItems for CreateStatement {
@@ -19,7 +20,7 @@ impl HasCompletionItems for CreateStatement {
         scope: &mut ScopedItems,
         position: Position,
         rope: &Rope,
-        client: &Client,
+        _: &Client,
     ) -> Vec<CompletionItem> {
         if let Some(table) = &self.table {
             let name_range = span_to_range(&table.1, rope).unwrap();

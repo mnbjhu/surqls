@@ -4,7 +4,7 @@ use tower_lsp::{
     Client,
 };
 
-use crate::core::parser::delcarations::{ScopedItems, Type};
+use crate::declarations::{scoped_item::ScopedItems, type_::Type};
 
 pub trait HasCompletionItems {
     fn get_completion_items(
