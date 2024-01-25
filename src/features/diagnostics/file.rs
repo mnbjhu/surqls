@@ -6,7 +6,7 @@ use crate::{ast::parser::File, declarations::scoped_item::ScopedItems};
 use super::diagnostic::HasDiagnostic;
 
 impl HasDiagnostic for File {
-    fn diagnostics(&self, rope: &Rope, scope: &mut ScopedItems) -> Vec<Diagnostic> {
+    fn diagnostics(&self, rope: &Rope, scope: &ScopedItems) -> Vec<Diagnostic> {
         let mut diagnostics = Vec::new();
         for statement in self {
             diagnostics.extend(statement.diagnostics(rope, scope));

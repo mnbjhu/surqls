@@ -15,7 +15,7 @@ impl HasDiagnosticsForType for Spanned<&Vec<Spanned<ObjectEntry>>> {
         &self,
         rope: &Rope,
         type_: &Type,
-        scope: &mut ScopedItems,
+        scope: &ScopedItems,
     ) -> Vec<Diagnostic> {
         match type_ {
             Type::Object(obj) => {

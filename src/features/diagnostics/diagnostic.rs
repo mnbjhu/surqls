@@ -14,11 +14,11 @@ pub trait HasDiagnosticsForType {
         &self,
         rope: &Rope,
         type_: &Type,
-        scope: &mut ScopedItems,
+        scope: &ScopedItems,
     ) -> Vec<Diagnostic>;
 }
 pub trait HasDiagnostic {
-    fn diagnostics(&self, rope: &Rope, scope: &mut ScopedItems) -> Vec<Diagnostic>;
+    fn diagnostics(&self, rope: &Rope, scope: &ScopedItems) -> Vec<Diagnostic>;
 }
 
 pub fn parse_file<'rope>(

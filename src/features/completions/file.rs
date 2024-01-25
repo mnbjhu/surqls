@@ -13,7 +13,7 @@ use super::has_completions::HasCompletionItems;
 impl HasCompletionItems for File {
     fn get_completion_items(
         &self,
-        scope: &mut ScopedItems,
+        scope: &ScopedItems,
         position: Position,
         rope: &Rope,
         client: &Client,

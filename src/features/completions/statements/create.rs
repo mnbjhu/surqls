@@ -5,8 +5,8 @@ use tower_lsp::{
 };
 
 use crate::{
-    ast::statement::create::CreateStatement,
-    declarations::scoped_item::ScopedItems,
+    ast::statement::crud::create::CreateStatement,
+    declarations::{scoped_item::ScopedItems, type_::Type},
     features::completions::{
         has_completions::{HasCompletionItems, HasCompletionItemsForType},
         table_name::get_completion_items_for_table_name,
@@ -17,7 +17,7 @@ use crate::{
 impl HasCompletionItems for CreateStatement {
     fn get_completion_items(
         &self,
-        scope: &mut ScopedItems,
+        scope: &ScopedItems,
         position: Position,
         rope: &Rope,
         _: &Client,
@@ -36,7 +36,7 @@ impl HasCompletionItems for CreateStatement {
                                 scope,
                                 position,
                                 rope,
-                                &ty.clone(),
+                                &Type::Object(ty.clone()),
                             );
                         }
                     }

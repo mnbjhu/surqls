@@ -7,12 +7,15 @@ use crate::{
 };
 
 impl HasDiagnostic for Spanned<Statement> {
-    fn diagnostics(&self, rope: &Rope, scope: &mut ScopedItems) -> Vec<Diagnostic> {
+    fn diagnostics(&self, rope: &Rope, scope: &ScopedItems) -> Vec<Diagnostic> {
         match &self.0 {
             Statement::Create(create) => (create, self.1).diagnostics(rope, scope),
             Statement::Update(update) => (update, self.1).diagnostics(rope, scope),
+            Statement::Delete(delete) => (delete, self.1).diagnostics(rope, scope),
+            Statement::Select(select) => (select, self.1).diagnostics(rope, scope),
             Statement::Return(expr) => expr.diagnostics(rope, scope),
             Statement::Define(_) => vec![],
+            Statement::Invalid => vec![],
         }
     }
 }

@@ -14,9 +14,9 @@ use tokio::sync::Mutex;
 use tower_lsp::jsonrpc::Result;
 use tower_lsp::lsp_types::{
     CodeActionOrCommand, CodeActionParams, CodeActionResponse, Command, CompletionParams,
-    CompletionResponse, DidChangeTextDocumentParams, DidOpenTextDocumentParams,
+    CompletionResponse, DidChangeTextDocumentParams, DidOpenTextDocumentParams, DocumentSymbol,
     DocumentSymbolParams, DocumentSymbolResponse, ExecuteCommandParams, InitializeParams,
-    InitializeResult, MessageType, Url, WorkspaceEdit,
+    InitializeResult, MessageType, Position, Range, SymbolKind, Url, WorkspaceEdit,
 };
 use tower_lsp::{Client, LanguageServer};
 
@@ -39,6 +39,8 @@ impl Backend {
         let (ast, diagnostics) = parse_file(text.clone(), &rope, &mut scope);
         if let Some(ast) = ast {
             self.ast_map.insert(filename.clone(), ast);
+        } else {
+            self.ast_map.remove(filename.clone().as_str());
         }
         self.client
             .publish_diagnostics(uri, diagnostics, None)
@@ -115,7 +117,16 @@ impl LanguageServer for Backend {
         let rope = self.document_map.get(uri.to_string().as_str()).unwrap();
         let ast = self.ast_map.get(uri.to_string().as_str());
         if ast.is_none() {
-            return Ok(None);
+            return Ok(Some(DocumentSymbolResponse::Nested(vec![DocumentSymbol {
+                name: "Error".to_string(),
+                kind: SymbolKind::NULL,
+                range: Range::new(Position::new(0, 0), Position::new(0, 0)),
+                selection_range: Default::default(),
+                children: None,
+                detail: None,
+                deprecated: None,
+                tags: None,
+            }])));
         }
         let ast = ast.unwrap();
         let mut symbols = Vec::new();

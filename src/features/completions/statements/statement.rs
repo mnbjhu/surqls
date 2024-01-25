@@ -13,18 +13,24 @@ use crate::{
 impl HasCompletionItems for Statement {
     fn get_completion_items(
         &self,
-        scope: &mut ScopedItems,
+        scope: &ScopedItems,
         position: Position,
         rope: &Rope,
         client: &Client,
     ) -> Vec<CompletionItem> {
         match &self {
             Statement::Create(create) => create.get_completion_items(scope, position, rope, client),
+            Statement::Update(update) => update.get_completion_items(scope, position, rope, client),
+            Statement::Delete(delete) => delete.get_completion_items(scope, position, rope, client),
+            Statement::Select(select) => select.get_completion_items(scope, position, rope, client),
             Statement::Return(expr) => {
                 expr.0
                     .get_completion_items_for_type(scope, position, rope, &Type::Any)
             }
-            _ => vec![],
+            Statement::Define(define) => {
+                define.0.get_completion_items(scope, position, rope, client)
+            }
+            Statement::Invalid => vec![],
         }
     }
 }

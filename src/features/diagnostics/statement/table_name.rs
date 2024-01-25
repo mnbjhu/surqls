@@ -10,7 +10,7 @@ pub fn diagnostics_for_table_name(
     name: &str,
     span: &Span,
     rope: &Rope,
-    scope: &mut ScopedItems,
+    scope: &ScopedItems,
 ) -> Vec<Diagnostic> {
     match scope.table_definitions.get(name) {
         Some(_) => {

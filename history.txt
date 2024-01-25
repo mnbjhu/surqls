@@ -1,0 +1,18 @@
+#V2
+define table thing;\n
+use ns test
+use db test
+define table thing;\n
+define field some on thing type string;\ndefine field other on thing type int;\n
+create thing content {\n  some: "content",\n  other: 123\n}\n;
+live select * from thing;
+create thing content {\n  some: "content",\n  other: 123\n};\n
+kill "57e91317-7583-434f-ac52-a6f3d8dc6c0d";
+define table some;\n
+use ns test;use db test;
+define table some;\n
+define field another on some type bool;\n
+select "" as some, "" as another\nfrom some\n
+define table test;\ndefine field data on test type object;\ndefine field data.first on test type string;\ndefine field data.second on test type string;\n
+use ns test; use db test
+define table test;\ndefine field data on test type object;\ndefine field data.first on test type string;\ndefine field data.second on test type string;\n

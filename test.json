@@ -1,0 +1,17 @@
+[
+  {
+    "result": {
+      "events": {},
+      "fields": {
+        "data": "DEFINE FIELD data ON test TYPE object PERMISSIONS FULL",
+        "data.first": "DEFINE FIELD data.first ON test TYPE string PERMISSIONS FULL",
+        "data.second": "DEFINE FIELD data.second ON test TYPE string PERMISSIONS FULL"
+      },
+      "indexes": {},
+      "lives": {},
+      "tables": {}
+    },
+    "status": "OK",
+    "time": "155.891µs"
+  }
+]

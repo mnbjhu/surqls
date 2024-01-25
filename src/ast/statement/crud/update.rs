@@ -1,6 +1,7 @@
-use crate::{ast::expr::parser::Expression, util::span::Spanned};
-
-use super::create::Transform;
+use crate::{
+    ast::{expr::parser::Expression, statement::transform::Transform},
+    util::span::Spanned,
+};
 
 pub struct UpdateStatement {
     pub table: Option<Spanned<String>>,

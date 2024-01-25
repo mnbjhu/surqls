@@ -2,7 +2,7 @@ use ropey::Rope;
 use tower_lsp::lsp_types::{DocumentSymbol, SymbolKind};
 
 use crate::{
-    ast::statement::create::CreateStatement,
+    ast::statement::crud::create::CreateStatement,
     features::symbols::Symbol,
     util::{range::span_to_range, span::Spanned},
 };
@@ -24,16 +24,7 @@ impl Symbol for Spanned<&CreateStatement> {
             children.push(content);
         }
         for transform in &self.0.transforms {
-            children.push(DocumentSymbol {
-                name: transform.0.to_string(),
-                kind: SymbolKind::STRUCT,
-                tags: None,
-                detail: None,
-                deprecated: None,
-                range: span_to_range(&self.1, rope).unwrap(),
-                selection_range: span_to_range(&self.1, rope).unwrap(),
-                children: None,
-            });
+            children.push(transform.get_document_symbol(rope));
         }
         DocumentSymbol {
             name: format!(

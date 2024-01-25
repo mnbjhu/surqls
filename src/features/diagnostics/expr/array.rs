@@ -13,7 +13,7 @@ impl HasDiagnosticsForType for Spanned<&Vec<Spanned<Expression>>> {
         &self,
         rope: &Rope,
         type_: &Type,
-        scope: &mut ScopedItems,
+        scope: &ScopedItems,
     ) -> Vec<Diagnostic> {
         if let Type::Array(inner_type) = type_ {
             let mut diagnostics = vec![];

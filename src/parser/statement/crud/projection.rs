@@ -3,10 +3,9 @@ use chumsky::{primitive::just, select, Parser};
 use crate::{
     ast::{parser::Extra, projection::Projection},
     lexer::{keyword::Keyword, token::Token},
+    parser::expr::{newline::optional_new_line, parser::expr_parser},
     util::span::{ParserInput, Spanned},
 };
-
-use super::expr::{newline::optional_new_line, parser::expr_parser};
 
 pub fn projection_parser<'tokens, 'src: 'tokens>(
 ) -> impl Parser<'tokens, ParserInput<'tokens, 'src>, Spanned<Projection>, Extra<'tokens>> + Clone {

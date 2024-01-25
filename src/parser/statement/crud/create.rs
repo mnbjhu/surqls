@@ -1,13 +1,13 @@
-use chumsky::{primitive::just, recovery::via_parser, select, Parser};
+use chumsky::{primitive::just, recovery::via_parser, select, IterParser, Parser};
 
 use crate::{
-    ast::{parser::Extra, statement::create::CreateStatement},
+    ast::{parser::Extra, statement::crud::create::CreateStatement},
     lexer::{keyword::Keyword, token::Token},
-    parser::expr::newline::optional_new_line,
+    parser::{expr::newline::optional_new_line, statement::transform::transform_parser},
     util::span::ParserInput,
 };
 
-use super::{content::content_parser, where_::where_parser};
+use super::content::content_parser;
 
 pub fn create_statement_parser<'tokens, 'src: 'tokens>(
 ) -> impl Parser<'tokens, ParserInput<'tokens, 'src>, CreateStatement, Extra<'tokens>> + Clone {
@@ -29,16 +29,14 @@ pub fn create_statement_parser<'tokens, 'src: 'tokens>(
         .recover_with(via_parser(create_part.map(|x| (x, None))))
         .then_ignore(optional_new_line())
         .then(
-            where_parser()
+            transform_parser()
                 .map_with(|part, scope| (part, scope.span()))
-                .or_not(),
+                .separated_by(optional_new_line())
+                .collect::<Vec<_>>(),
         )
         .map(|((table, content), transforms)| CreateStatement {
             table,
             content,
-            transforms: match transforms {
-                Some(where_) => vec![where_],
-                None => vec![],
-            },
+            transforms,
         })
 }

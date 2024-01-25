@@ -10,7 +10,7 @@ use crate::{
 impl HasCompletionItemsForType for Vec<Spanned<ObjectEntry>> {
     fn get_completion_items_for_type(
         &self,
-        scope: &mut ScopedItems,
+        scope: &ScopedItems,
         position: Position,
         rope: &ropey::Rope,
         type_: &Type,

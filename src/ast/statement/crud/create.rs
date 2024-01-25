@@ -1,6 +1,9 @@
 use std::fmt::Display;
 
-use crate::{ast::expr::parser::Expression, util::span::Spanned};
+use crate::{
+    ast::{expr::parser::Expression, statement::transform::Transform},
+    util::span::Spanned,
+};
 
 pub struct CreateStatement {
     pub table: Option<Spanned<String>>,
@@ -8,14 +11,11 @@ pub struct CreateStatement {
     pub transforms: Vec<Spanned<Transform>>,
 }
 
-pub enum Transform {
-    Where(Option<Spanned<Expression>>),
-}
-
 impl Display for Transform {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Transform::Where(_) => write!(f, "where"),
+            _ => write!(f, "invalid"),
         }
     }
 }

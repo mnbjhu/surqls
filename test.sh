@@ -5,5 +5,5 @@ curl -X POST \
 	-H "NS: test" \
 	-H "DB: test" \
 	-H "Accept: application/json" \
-	-d "INFO FOR DB;" \
+	-d "INFO FOR TABLE test;" \
 	http://localhost:8000/sql

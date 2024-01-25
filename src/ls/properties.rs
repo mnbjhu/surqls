@@ -79,7 +79,7 @@ pub async fn parse_config(backend: &Backend) -> Result<(), ()> {
     }
 }
 
-pub async fn get_table_defs(backend: &Backend) -> HashMap<String, Type> {
+pub async fn get_table_defs(backend: &Backend) -> HashMap<String, Object> {
     let client = reqwest::Client::new();
     let res = client
         .post("http://localhost:8000/sql")
@@ -186,7 +186,7 @@ pub async fn parse_table_defs(
     statements: &Vec<DefineStatement>,
     parents: String,
     backend: &Backend,
-) -> Type {
+) -> Object {
     backend
         .client
         .log_message(
@@ -206,16 +206,30 @@ pub async fn parse_table_defs(
                     .collect::<Vec<_>>()
                     .join(".");
                 if parent == parents {
-                    fields.push(Field {
-                        name: field.name.0.clone(),
-                        ty: parse_declared_type(&field.type_.0),
-                    });
+                    if &field.type_.0.name.0 == "object" {
+                        let new_parent = if parents == "" {
+                            field.name.0.clone()
+                        } else {
+                            format!("{}.{}", parents, field.name.0)
+                        };
+                        let ty = parse_table_defs(statements, new_parent, backend).await;
+                        fields.push(Field {
+                            name: field.name.0.clone(),
+                            ty: Type::Object(ty),
+                        });
+                    } else {
+                        let ty = parse_declared_type(&field.type_.0);
+                        fields.push(Field {
+                            name: field.name.0.clone(),
+                            ty,
+                        });
+                    }
                 }
             }
             DefineStatement::Table(_) => continue,
         }
     }
-    Type::Object(Object { fields })
+    Object { fields }
 }
 
 fn parse_declared_type(AstType { name, args }: &AstType) -> Type {
