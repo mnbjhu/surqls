@@ -1,8 +1,5 @@
 use ropey::Rope;
-use tower_lsp::{
-    lsp_types::{CompletionItem, Position},
-    Client,
-};
+use tower_lsp::lsp_types::{CompletionItem, Position};
 
 use crate::{
     ast::projection::Projection,
@@ -17,7 +14,6 @@ impl HasCompletionItems for Projection {
         scope: &ScopedItems,
         position: Position,
         rope: &Rope,
-        _: &Client,
     ) -> Vec<CompletionItem> {
         let expression_range = span_to_range(&self.expr.1, rope).unwrap();
         if expression_range.start <= position && position <= expression_range.end {

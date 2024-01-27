@@ -42,12 +42,18 @@ pub fn lexer<'a>() -> impl Parser<'a, &'a str, Vec<(Token, Span)>, extra::Err<Ri
                 "full" => Token::Keyword(Keyword::Full),
                 "none" => Token::Keyword(Keyword::None),
                 "permissions" => Token::Keyword(Keyword::Permissions),
+                "let" => Token::Keyword(Keyword::Let),
                 "true" => Token::Boolean(true),
                 "false" => Token::Boolean(false),
                 _ => Token::Identifier(s.to_string()),
             }
         })
         .map_with(|t, s| (t, s.span()));
+
+    let variable = just('$')
+        .then(text::ident())
+        .map(|(_, s): (char, &str)| Token::Variable(s.to_string()))
+        .map_with(|t, e| (t, e.span()));
 
     let digits = text::digits(10).to_slice();
 
@@ -84,27 +90,84 @@ pub fn lexer<'a>() -> impl Parser<'a, &'a str, Vec<(Token, Span)>, extra::Err<Ri
         )))
         .ignored();
 
-    let string = none_of("\\\"\n")
+    let duration_unit = choice((
+        just('n').then(just('s')).map(|_| "ns"),
+        just('u').then(just('s')).map(|_| "us"),
+        just('m').then(just('s')).map(|_| "ms"),
+        just('s').map(|_| "s"),
+        just('m').map(|_| "m"),
+        just('h').map(|_| "h"),
+        just('d').map(|_| "d"),
+        just('w').map(|_| "w"),
+        just('y').map(|_| "y"),
+    ));
+
+    let duration_part = digits.clone().then(duration_unit);
+    let duration = duration_part
+        .clone()
+        .then(duration_part.repeated())
+        .to_slice()
+        .map(|s: &str| Token::Duration(s.to_string()))
+        .map_with(|t, e| (t, e.span()));
+
+    let string = none_of("\\\"")
         .ignored()
         .or(escape)
         .repeated()
         .to_slice()
-        .map(|s: &str| Token::String(s.to_string()))
         .delimited_by(
             just('"'),
             just('"')
                 .ignored()
                 .recover_with(via_parser(one_of("\n").ignored())),
-        )
+        );
+
+    let record_string = just('r')
+        .ignore_then(string.clone())
+        .map(|s: &str| Token::RecordString(s.to_string()))
+        .map_with(|t, e| (t, e.span()));
+
+    let datetime_string = just('d')
+        .ignore_then(string.clone())
+        .map(|s: &str| Token::DateTime(s.to_string()))
+        .map_with(|t, e| (t, e.span()));
+
+    let explicit_string = just('s')
+        .ignore_then(string.clone())
+        .map(|s: &str| Token::String(s.to_string()))
+        .map_with(|t, e| (t, e.span()));
+
+    let string = string
+        .map(|s: &str| {
+            if let Ok(_) = chrono::DateTime::parse_from_rfc3339(s) {
+                return Token::DateTime(s.to_string());
+            };
+            let record_id_regex = regex::Regex::new(r"^[a-zA-Z0-9_]+:[a-zA-Z0-9_]+$").unwrap();
+            if record_id_regex.is_match(s) {
+                return Token::RecordString(s.to_string());
+            }
+            Token::String(s.to_string())
+        })
         .map_with(|t, e| (t, e.span()));
 
     let punctuation = one_of("#_.,;:{}[]()")
         .map(Token::Punctuation)
         .map_with(|t, e| (t, e.span()));
 
-    let op = one_of("+-*/=<>|&!")
+    let comparisons = choice((
+        just("==").map(|_| Token::Operator("==".to_string())),
+        just("<=").map(|_| Token::Operator("<=".to_string())),
+        just(">=").map(|_| Token::Operator(">=".to_string())),
+        just("=").map(|_| Token::Operator("=".to_string())),
+        just("<").map(|_| Token::Operator("<".to_string())),
+        just(">").map(|_| Token::Operator(">".to_string())),
+        just("!=").map(|_| Token::Operator("!=".to_string())),
+    ))
+    .map_with(|t, e| (t, e.span()));
+
+    let op = one_of("+-*/|&!")
         .to_slice()
-        .then(one_of("+-*/=<>|&!").repeated().collect::<String>())
+        .then(one_of("+-*/|&!").repeated().collect::<String>())
         .map(|(f, s)| Token::Operator(format!("{}{}", f, s)))
         .map_with(|t, e| (t, e.span()));
 
@@ -121,11 +184,17 @@ pub fn lexer<'a>() -> impl Parser<'a, &'a str, Vec<(Token, Span)>, extra::Err<Ri
 
     choice((
         semi,
+        variable,
+        explicit_string,
+        datetime_string,
+        record_string,
+        string,
         ident,
+        duration,
         int,
         float,
-        string,
         punctuation,
+        comparisons,
         op,
         implicit_semi,
     ))

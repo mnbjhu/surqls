@@ -29,6 +29,7 @@ pub enum Keyword {
     Full,
     None,
     Permissions,
+    Let,
 }
 
 impl Display for Keyword {
@@ -60,6 +61,7 @@ impl Display for Keyword {
             Keyword::Return => write!(f, "return"),
             Keyword::Full => write!(f, "full"),
             Keyword::None => write!(f, "none"),
+            Keyword::Let => write!(f, "let"),
             Keyword::Permissions => write!(f, "permissions"),
         }
     }

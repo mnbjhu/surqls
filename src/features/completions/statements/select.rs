@@ -1,8 +1,5 @@
 use ropey::Rope;
-use tower_lsp::{
-    lsp_types::{CompletionItem, Position},
-    Client,
-};
+use tower_lsp::lsp_types::{CompletionItem, Position};
 
 use crate::{
     ast::{expr::types::Typed, statement::crud::select::SelectStatement},
@@ -19,7 +16,6 @@ impl HasCompletionItems for SelectStatement {
         scope: &ScopedItems,
         position: Position,
         rope: &Rope,
-        client: &Client,
     ) -> Vec<CompletionItem> {
         let mut scope = scope.clone();
         if let Some(from) = &self.from {
@@ -28,7 +24,7 @@ impl HasCompletionItems for SelectStatement {
             }
             let name_range = span_to_range(&from.1, rope).unwrap();
             if name_range.start <= position && position <= name_range.end {
-                return get_completion_items_for_table_name(&scope, &from.0);
+                return get_completion_items_for_table_name(&scope);
             }
         };
         for projection in &self.projections {
@@ -41,17 +37,13 @@ impl HasCompletionItems for SelectStatement {
                 });
             }
             if projection_range.start <= position && position <= projection_range.end {
-                return projection
-                    .0
-                    .get_completion_items(&scope, position, rope, client);
+                return projection.0.get_completion_items(&scope, position, rope);
             }
         }
         for transform in &self.transforms {
             let transform_range = span_to_range(&transform.1, rope).unwrap();
             if transform_range.start <= position && position <= transform_range.end {
-                return transform
-                    .0
-                    .get_completion_items(&scope, position, rope, client);
+                return transform.0.get_completion_items(&scope, position, rope);
             }
         }
         return vec![];

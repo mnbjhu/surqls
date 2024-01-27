@@ -1,14 +1,21 @@
 use chumsky::{primitive::just, recovery::via_parser, select, IterParser, Parser};
 
 use crate::{
-    ast::{parser::Extra, statement::crud::delete::DeleteStatement},
+    ast::{
+        parser::Extra,
+        statement::{crud::delete::DeleteStatement, statement::Statement},
+    },
     lexer::{keyword::Keyword, token::Token},
     parser::{expr::newline::optional_new_line, statement::transform::transform_parser},
-    util::span::ParserInput,
+    util::span::{ParserInput, Spanned},
 };
 
 pub fn delete_statement_parser<'tokens, 'src: 'tokens>(
-) -> impl Parser<'tokens, ParserInput<'tokens, 'src>, DeleteStatement, Extra<'tokens>> + Clone {
+    stmt: impl Parser<'tokens, ParserInput<'tokens, 'src>, Spanned<Statement>, Extra<'tokens>>
+        + Clone
+        + 'tokens,
+) -> impl Parser<'tokens, ParserInput<'tokens, 'src>, DeleteStatement, Extra<'tokens>> + Clone + 'tokens
+{
     let ident = select! {
         Token::Identifier(s) => s,
     }
@@ -24,9 +31,10 @@ pub fn delete_statement_parser<'tokens, 'src: 'tokens>(
         .clone()
         .then_ignore(optional_new_line())
         .then(
-            transform_parser()
+            transform_parser(stmt)
                 .map_with(|part, scope| (part, scope.span()))
                 .separated_by(optional_new_line())
+                .allow_leading()
                 .collect::<Vec<_>>(),
         )
         .map(|(table, transforms)| DeleteStatement { table, transforms })

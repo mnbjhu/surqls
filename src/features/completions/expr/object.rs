@@ -59,7 +59,18 @@ impl HasCompletionItemsForType for Vec<Spanned<ObjectEntry>> {
                     }
                 }
             }
-            _ => {}
+            _ => {
+                for (entry, _) in self {
+                    if let Some(value) = &entry.value {
+                        items.extend(value.0.get_completion_items_for_type(
+                            scope,
+                            position,
+                            rope,
+                            &Type::Any,
+                        ));
+                    }
+                }
+            }
         }
         items
     }

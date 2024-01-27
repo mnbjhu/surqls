@@ -5,10 +5,13 @@ use chumsky::{
 };
 
 use crate::{
-    ast::{parser::Extra, statement::transform::Transform},
+    ast::{
+        parser::Extra,
+        statement::{statement::Statement, transform::Transform},
+    },
     lexer::{keyword::Keyword, token::Token},
     parser::expr::newline::optional_new_line,
-    util::span::ParserInput,
+    util::span::{ParserInput, Spanned},
 };
 
 pub mod limit;
@@ -16,11 +19,14 @@ pub mod skip;
 pub mod where_;
 
 pub fn transform_parser<'tokens, 'src: 'tokens>(
-) -> impl Parser<'tokens, ParserInput<'tokens, 'src>, Transform, Extra<'tokens>> + Clone {
+    stmt: impl Parser<'tokens, ParserInput<'tokens, 'src>, Spanned<Statement>, Extra<'tokens>>
+        + Clone
+        + 'tokens,
+) -> impl Parser<'tokens, ParserInput<'tokens, 'src>, Transform, Extra<'tokens>> + Clone + 'tokens {
     choice((
-        where_::where_parser(),
-        limit::limit_parser(),
-        skip::skip_parser(),
+        where_::where_parser(stmt.clone()),
+        limit::limit_parser(stmt.clone()),
+        skip::skip_parser(stmt),
     ))
     .recover_with(skip_then_retry_until(
         any().ignored(),
@@ -40,7 +46,8 @@ pub fn transform_parser<'tokens, 'src: 'tokens>(
 }
 
 pub fn unexpected_parser<'tokens, 'src: 'tokens>(
-) -> impl Parser<'tokens, ParserInput<'tokens, 'src>, Unexpected, Extra<'tokens>> + Clone {
+) -> impl Parser<'tokens, ParserInput<'tokens, 'src>, Unexpected, Extra<'tokens>> + Clone + 'tokens
+{
     let keyword = select! {
         Token::Keyword(k) => k,
     };
@@ -53,6 +60,7 @@ pub fn unexpected_parser<'tokens, 'src: 'tokens>(
     )))
 }
 
+#[derive(Debug, Clone)]
 pub enum Unexpected {
     Keyword(Keyword),
     Identifier(String),

@@ -6,8 +6,10 @@ use super::{
         update::UpdateStatement,
     },
     define::DefineStatement,
+    let_::LetStatement,
 };
 
+#[derive(Debug, Clone)]
 pub enum Statement {
     Select(SelectStatement),
     Create(CreateStatement),
@@ -15,5 +17,6 @@ pub enum Statement {
     Delete(DeleteStatement),
     Return(Spanned<Expression>),
     Define(Spanned<DefineStatement>),
+    Let(LetStatement),
     Invalid,
 }

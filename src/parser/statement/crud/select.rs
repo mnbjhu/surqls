@@ -3,23 +3,30 @@ use chumsky::{primitive::just, recovery::via_parser, select, IterParser, Parser}
 use crate::{
     ast::{
         parser::Extra,
-        statement::crud::{create::CreateStatement, select::SelectStatement},
+        statement::{
+            crud::{create::CreateStatement, select::SelectStatement},
+            statement::Statement,
+        },
     },
     lexer::{keyword::Keyword, token::Token},
     parser::{expr::newline::optional_new_line, statement::transform::transform_parser},
-    util::span::ParserInput,
+    util::span::{ParserInput, Spanned},
 };
 
 use super::projection::projection_parser;
 
 pub fn select_statement_parser<'tokens, 'src: 'tokens>(
-) -> impl Parser<'tokens, ParserInput<'tokens, 'src>, SelectStatement, Extra<'tokens>> + Clone {
+    stmt: impl Parser<'tokens, ParserInput<'tokens, 'src>, Spanned<Statement>, Extra<'tokens>>
+        + Clone
+        + 'tokens,
+) -> impl Parser<'tokens, ParserInput<'tokens, 'src>, SelectStatement, Extra<'tokens>> + Clone + 'tokens
+{
     let ident = select! {
         Token::Identifier(s) => s,
     }
     .map_with(|x, s| (x, s.span()));
 
-    let projections = projection_parser()
+    let projections = projection_parser(stmt.clone())
         .separated_by(just(Token::Punctuation(',')))
         .collect::<Vec<_>>();
 
@@ -37,7 +44,7 @@ pub fn select_statement_parser<'tokens, 'src: 'tokens>(
         .then(optional_new_line().ignore_then(from_part))
         .recover_with(via_parser(select_part.map(|x| (x, None))))
         .then(
-            transform_parser()
+            transform_parser(stmt)
                 .map_with(|part, scope| (part, scope.span()))
                 .separated_by(optional_new_line())
                 .allow_leading()

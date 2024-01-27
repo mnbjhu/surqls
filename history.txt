@@ -16,3 +16,15 @@ select "" as some, "" as another\nfrom some\n
 define table test;\ndefine field data on test type object;\ndefine field data.first on test type string;\ndefine field data.second on test type string;\n
 use ns test; use db test
 define table test;\ndefine field data on test type object;\ndefine field data.first on test type string;\ndefine field data.second on test type string;\n
+define table test;\ndefine field data on test type object permissions full;\ndefine field data.first on test type string permissions full;\ndefine field data.second on test type string permissions full;\n
+use ns test;use db test;
+define table test;\ndefine field data on test type object permissions full;\ndefine field data.first on test type string permissions full;\ndefine field data.second on test type string permissions full;\n
+return {\n  let $x = 1;\n  return $x;\n};\n
+return {\n  let $x = 1;\n};\n
+return {\n  let $x = 1;\n  $x;\n};\n
+return {\n  $x;\n  let $x = 1;\n  $x;\n};\n
+use ns test; use db test;
+return {\n  let $x = 1;\n  $x;\n  $x;\n};\n
+return {\n  let $x = 1;\n  return $x;\n};\n
+return {\n  let $x = 1;\n  let $y = 10;\n  let $z = $x + $y;\n  return $x;\n};\n
+return {\n  let $x = 5;\n  let $y = 10;\n  let $z = $x + $y;\n  return $z;\n};\n

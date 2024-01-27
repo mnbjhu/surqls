@@ -3,6 +3,7 @@ use crate::{
     util::span::Spanned,
 };
 
+#[derive(Debug, Clone)]
 pub struct SelectStatement {
     pub projections: Vec<Spanned<Projection>>,
     pub from: Option<Spanned<String>>,

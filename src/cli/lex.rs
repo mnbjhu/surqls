@@ -6,7 +6,6 @@ use colored::{ColoredString, Colorize};
 use crate::lexer::{lexer::lexer, token::Token};
 
 pub fn lex(file: PathBuf) {
-    println!("Lexing file: {:?}", file);
     let text = fs::read_to_string(file).unwrap();
     let rope = ropey::Rope::from_str(&text);
     let (tokens, _) = lexer().parse(&text).into_output_errors();
@@ -29,9 +28,13 @@ pub fn lex(file: PathBuf) {
                     Token::Operator(_) => "magenta",
                     Token::Punctuation(_) => "cyan",
                     Token::String(_) => "blue",
+                    Token::DateTime(_) => "red",
+                    Token::Duration(_) => "red",
                     Token::Float(_) => "red",
                     Token::Integer(_) => "red",
-                    Token::Boolean(_) => "red",
+                    Token::RecordString(_) => "red",
+                    Token::Boolean(_) => "yellow",
+                    Token::Variable(_) => "white",
                     Token::Newline => "white",
                 };
                 let color = colored::Color::from(color);

@@ -12,7 +12,6 @@ impl HasCompletionItems for Transform {
         scope: &crate::declarations::scoped_item::ScopedItems,
         position: tower_lsp::lsp_types::Position,
         rope: &ropey::Rope,
-        _: &tower_lsp::Client,
     ) -> Vec<CompletionItem> {
         let expr = match self {
             Transform::Where(Some((e, _))) => e,

@@ -7,7 +7,10 @@ use chumsky::{
 };
 
 use crate::{
-    ast::{parser::Extra, statement::define::DefineStatement},
+    ast::{
+        parser::Extra,
+        statement::{define::DefineStatement, statement::Statement},
+    },
     lexer::{keyword::Keyword, token::Token},
     parser::expr::newline::optional_new_line,
     util::span::{ParserInput, Spanned},
@@ -16,8 +19,12 @@ use crate::{
 use self::{field::define_field_parser, table::define_table_parser};
 
 pub fn define_statement_parser<'tokens, 'src: 'tokens>(
-) -> impl Parser<'tokens, ParserInput<'tokens, 'src>, Spanned<DefineStatement>, Extra<'tokens>> + Clone
-{
+    stmt: impl Parser<'tokens, ParserInput<'tokens, 'src>, Spanned<Statement>, Extra<'tokens>>
+        + Clone
+        + 'tokens,
+) -> impl Parser<'tokens, ParserInput<'tokens, 'src>, Spanned<DefineStatement>, Extra<'tokens>>
+       + Clone
+       + 'tokens {
     let kind = choice((
         define_table_parser().map_with(|t, s| DefineStatement::Table((t, s.span()))),
         define_field_parser().map_with(|f, s| DefineStatement::Field((f, s.span()))),

@@ -18,7 +18,9 @@ pub fn op_parser<'tokens, 'src: 'tokens>(
     atom: impl Parser<'tokens, ParserInput<'tokens, 'src>, Spanned<Expression>, Extra<'tokens>>
         + Clone
         + 'tokens,
-) -> impl Parser<'tokens, ParserInput<'tokens, 'src>, Spanned<Expression>, Extra<'tokens>> + Clone {
+) -> impl Parser<'tokens, ParserInput<'tokens, 'src>, Spanned<Expression>, Extra<'tokens>>
+       + Clone
+       + 'tokens {
     let unary_op = choice((
         just(Token::Operator("-".to_string())).map(|_| UnaryOperator::Negate),
         just(Token::Operator("!".to_string())).map(|_| UnaryOperator::Not),

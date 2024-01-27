@@ -3,6 +3,7 @@ use crate::{
     util::span::Spanned,
 };
 
+#[derive(Debug, Clone)]
 pub struct UpdateStatement {
     pub table: Option<Spanned<String>>,
     pub content: Option<Spanned<Expression>>,

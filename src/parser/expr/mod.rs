@@ -1,5 +1,7 @@
 pub mod access;
 pub mod array;
+pub mod code_block;
+pub mod function;
 pub mod literal;
 pub mod newline;
 pub mod object;

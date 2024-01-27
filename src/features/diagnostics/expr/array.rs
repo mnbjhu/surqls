@@ -15,19 +15,12 @@ impl HasDiagnosticsForType for Spanned<&Vec<Spanned<Expression>>> {
         type_: &Type,
         scope: &ScopedItems,
     ) -> Vec<Diagnostic> {
+        let mut diagnostics = vec![];
         if let Type::Array(inner_type) = type_ {
-            let mut diagnostics = vec![];
             for expr in self.0.iter() {
                 diagnostics.extend(expr.diagnostics_for_type(rope, inner_type, scope));
             }
-            diagnostics
-        } else {
-            vec![Diagnostic {
-                range: Default::default(),
-                severity: None,
-                message: "Expected array type".to_string(),
-                ..Default::default()
-            }]
         }
+        diagnostics
     }
 }

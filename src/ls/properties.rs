@@ -162,7 +162,7 @@ pub async fn get_table_defs(backend: &Backend) -> HashMap<String, Object> {
     table_defs
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(Deserialize, Debug, Clone)]
 pub struct SurrealResponse<T> {
     pub status: String,
     pub result: T,
@@ -232,7 +232,7 @@ pub async fn parse_table_defs(
     Object { fields }
 }
 
-fn parse_declared_type(AstType { name, args }: &AstType) -> Type {
+pub fn parse_declared_type(AstType { name, args }: &AstType) -> Type {
     match name.0.as_str() {
         "string" => Type::String,
         "int" => Type::Int,
@@ -259,6 +259,25 @@ fn parse_declared_type(AstType { name, args }: &AstType) -> Type {
                 })
                 .collect::<Vec<_>>(),
         }),
+        "option" => {
+            if args.len() != 1 {
+                Type::Error
+            } else {
+                Type::Option(Box::new(parse_declared_type(&args[0].0)))
+            }
+        }
+        "record" => {
+            if args.len() != 1 {
+                Type::Error
+            } else {
+                let AstType { name, args } = &args[0].0;
+                if args.len() != 0 {
+                    Type::Error
+                } else {
+                    Type::Record(name.0.clone())
+                }
+            }
+        }
         _ => Type::Any,
     }
 }

@@ -13,8 +13,9 @@ impl HasDiagnostic for Spanned<Statement> {
             Statement::Update(update) => (update, self.1).diagnostics(rope, scope),
             Statement::Delete(delete) => (delete, self.1).diagnostics(rope, scope),
             Statement::Select(select) => (select, self.1).diagnostics(rope, scope),
+            Statement::Define(define) => (&define.0, self.1).diagnostics(rope, scope),
             Statement::Return(expr) => expr.diagnostics(rope, scope),
-            Statement::Define(_) => vec![],
+            Statement::Let(let_) => (let_, self.1).diagnostics(rope, scope),
             Statement::Invalid => vec![],
         }
     }

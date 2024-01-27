@@ -14,7 +14,8 @@ use crate::{
 };
 
 pub fn define_table_parser<'tokens, 'src: 'tokens>(
-) -> impl Parser<'tokens, ParserInput<'tokens, 'src>, DefineTable, Extra<'tokens>> + Clone {
+) -> impl Parser<'tokens, ParserInput<'tokens, 'src>, DefineTable, Extra<'tokens>> + Clone + 'tokens
+{
     let ident = select! {
         Token::Identifier(ident) => ident,
     }
@@ -22,12 +23,18 @@ pub fn define_table_parser<'tokens, 'src: 'tokens>(
 
     just(Token::Keyword(Keyword::Table))
         .ignore_then(optional_new_line().ignore_then(ident))
-        .then(optional_new_line().ignore_then(permission_parser().or_not()))
+        .then(
+            optional_new_line()
+                .ignore_then(permission_parser())
+                .or_not(),
+        )
         .map(|(name, permission)| DefineTable { name, permission })
 }
 
 pub fn permission_parser<'tokens, 'src: 'tokens>(
-) -> impl Parser<'tokens, ParserInput<'tokens, 'src>, Spanned<Permission>, Extra<'tokens>> + Clone {
+) -> impl Parser<'tokens, ParserInput<'tokens, 'src>, Spanned<Permission>, Extra<'tokens>>
+       + Clone
+       + 'tokens {
     // let recovered = just(Token::Keyword(Keyword::Permissions)).map(|_| Permission::None);
     just(Token::Keyword(Keyword::Permissions))
         .ignore_then(optional_new_line())

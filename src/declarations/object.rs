@@ -1,6 +1,6 @@
 use super::field::Field;
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Object {
     pub fields: Vec<Field>,
 }

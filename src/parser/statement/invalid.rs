@@ -7,8 +7,12 @@ use crate::{
 };
 
 pub fn invalid_statement_parser<'tokens, 'src: 'tokens>(
-) -> impl Parser<'tokens, ParserInput<'tokens, 'src>, Statement, Extra<'tokens>> + Clone {
-    let pattern = none_of(Token::Punctuation(';'));
+) -> impl Parser<'tokens, ParserInput<'tokens, 'src>, Statement, Extra<'tokens>> + Clone + 'tokens {
+    let pattern = none_of(vec![
+        Token::Punctuation(';'),
+        Token::Punctuation('{'),
+        Token::Punctuation('}'),
+    ]);
     pattern
         .clone()
         .then(pattern.repeated())

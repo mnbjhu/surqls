@@ -34,6 +34,16 @@ impl Symbol for &Spanned<Statement> {
                 selection_range: span_to_range(&self.1, rope).unwrap(),
                 children: None,
             },
+            Statement::Let(_) => DocumentSymbol {
+                name: "let".to_string(),
+                kind: SymbolKind::FUNCTION,
+                tags: None,
+                detail: None,
+                deprecated: None,
+                range: span_to_range(&self.1, rope).unwrap(),
+                selection_range: span_to_range(&self.1, rope).unwrap(),
+                children: None,
+            },
             Statement::Invalid => DocumentSymbol {
                 name: "invalid".to_string(),
                 kind: SymbolKind::NULL,

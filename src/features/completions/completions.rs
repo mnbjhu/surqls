@@ -1,9 +1,12 @@
-use chumsky::{error::RichPattern, prelude::Input, Parser};
+use chumsky::{error::RichPattern, prelude::Input, util::Maybe, Parser};
 use tower_lsp::lsp_types::{CompletionItem, CompletionItemKind, CompletionParams};
 
 use crate::{
-    features::completions::has_completions::HasCompletionItems, lexer::lexer::lexer,
-    ls::backend::Backend, parser::parser::parser, util::range::span_to_range,
+    features::completions::has_completions::HasCompletionItems,
+    lexer::{keyword::Keyword, lexer::lexer, token::Token},
+    ls::backend::Backend,
+    parser::parser::parser,
+    util::range::span_to_range,
 };
 
 pub async fn get_completions(backend: &Backend, _params: CompletionParams) -> Vec<CompletionItem> {
@@ -29,12 +32,13 @@ pub async fn get_completions(backend: &Backend, _params: CompletionParams) -> Ve
                 for exp in err.expected() {
                     match exp {
                         RichPattern::Token(kw) => {
-                            let kw = kw.to_string();
-                            completions.push(CompletionItem {
-                                label: kw.to_string(),
-                                kind: Some(CompletionItemKind::KEYWORD),
-                                ..Default::default()
-                            });
+                            if let Maybe::Val(Token::Keyword(kw)) = kw {
+                                completions.push(CompletionItem {
+                                    label: kw.to_string(),
+                                    kind: Some(CompletionItemKind::KEYWORD),
+                                    ..Default::default()
+                                });
+                            }
                         }
                         _ => {}
                     }
@@ -46,7 +50,6 @@ pub async fn get_completions(backend: &Backend, _params: CompletionParams) -> Ve
                 &mut scoped_items,
                 _params.text_document_position.position,
                 &rope,
-                &backend.client,
             ))
         };
     }

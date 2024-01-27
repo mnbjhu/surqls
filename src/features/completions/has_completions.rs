@@ -12,7 +12,6 @@ pub trait HasCompletionItems {
         scope: &ScopedItems,
         position: Position,
         rope: &Rope,
-        client: &Client,
     ) -> Vec<CompletionItem>;
 }
 

@@ -1,6 +1,8 @@
 use std::sync::Arc;
 
 use crate::ast::parser::File;
+use crate::ast::statement::define::DefineStatement;
+use crate::ast::statement::statement::Statement;
 use crate::declarations::scoped_item::ScopedItems;
 use crate::features::completions::completions::get_completions;
 use crate::features::diagnostics::diagnostic::parse_file;
@@ -21,6 +23,7 @@ use tower_lsp::lsp_types::{
 use tower_lsp::{Client, LanguageServer};
 
 use super::properties::{get_table_defs, parse_config};
+use super::query::{query, send_query, update_remote_definition};
 
 pub struct Backend {
     pub client: Client,
@@ -47,13 +50,13 @@ impl Backend {
             .await;
     }
 
-    async fn update_definitions(&self) {
+    pub async fn update_definitions(&self) {
         let defs = get_table_defs(&self).await;
         let mut scope = self.state.lock().await;
         scope.table_definitions = defs;
     }
 
-    async fn refresh_diagnostics(&self) {
+    pub async fn refresh_diagnostics(&self) {
         let mut scope = self.state.lock().await;
         for (uri, rope) in self.document_map.clone().into_iter() {
             let (ast, diagnostics) = parse_file(rope.to_string(), &rope, &mut scope);
@@ -162,11 +165,38 @@ impl LanguageServer for Backend {
                     let range = span_to_range(span, &rope.value()).unwrap();
                     if range.start <= params.range.start && params.range.start <= range.end {
                         let query = rope.slice((span.start)..(span.end)).to_string();
+                        let root = self.properties.get("root_dir").unwrap().clone();
+                        send_query(query, &self, root).await;
+                    }
+                }
+            }
+            "db.define" => {
+                let params: CodeActionParams =
+                    serde_json::from_value(params.arguments[0].clone()).unwrap();
+                let uri = params.text_document.uri;
+                let rope = self.document_map.get(uri.to_string().as_str()).unwrap();
+                let ast = self.ast_map.get(uri.to_string().as_str());
+                for (_, span) in ast.unwrap().value() {
+                    let range = span_to_range(span, &rope.value()).unwrap();
+                    if range.start <= params.range.start && params.range.start <= range.end {
+                        let query_text = rope.slice((span.start)..(span.end)).to_string();
+                        query(query_text, &self).await;
                         self.client
-                            .show_message(MessageType::ERROR, format!("{}", query))
+                            .log_message(MessageType::WARNING, "Query Sent")
                             .await;
                     }
                 }
+                self.client
+                    .log_message(MessageType::WARNING, "Def found")
+                    .await;
+                self.update_definitions().await;
+                self.client
+                    .log_message(MessageType::WARNING, "Definitions Updated")
+                    .await;
+                self.refresh_diagnostics().await;
+                self.client
+                    .log_message(MessageType::WARNING, "Diagnostic Refreshed")
+                    .await;
             }
             _ => {}
         }
@@ -174,18 +204,53 @@ impl LanguageServer for Backend {
     }
 
     async fn code_action(&self, _params: CodeActionParams) -> Result<Option<CodeActionResponse>> {
+        let rope = self
+            .document_map
+            .get(_params.text_document.uri.to_string().as_str())
+            .unwrap()
+            .value()
+            .clone();
+
+        let mut actions = Vec::new();
+        if let Some(ast) = self
+            .ast_map
+            .get(_params.text_document.uri.to_string().as_str())
+        {
+            let pos = _params.range.start;
+            for (stmt, span) in ast.value() {
+                let range = span_to_range(span, &rope).unwrap();
+                if range.start <= pos && pos <= range.end {
+                    match &stmt {
+                        Statement::Define(_) => {
+                            let refresh = CodeActionOrCommand::Command(Command {
+                                title: "Update remote definition".to_string(),
+                                command: "db.define".to_string(),
+                                arguments: Some(vec![
+                                    serde_json::to_value(_params.clone()).unwrap()
+                                ]),
+                            });
+                            actions.push(refresh);
+                        }
+                        _ => {
+                            let run = CodeActionOrCommand::Command(Command {
+                                title: "Run Query".to_string(),
+                                command: "db.run".to_string(),
+                                arguments: Some(vec![
+                                    serde_json::to_value(_params.clone()).unwrap()
+                                ]),
+                            });
+                            actions.push(run);
+                        }
+                    }
+                }
+            }
+        }
         let refresh = CodeActionOrCommand::Command(Command {
             title: "Sync Definitions With Database".to_string(),
             command: "db.refresh".to_string(),
             arguments: Some(vec![serde_json::to_value(WorkspaceEdit::default()).unwrap()]),
         });
-
-        let run = CodeActionOrCommand::Command(Command {
-            title: "Run Query".to_string(),
-            command: "db.run".to_string(),
-            arguments: Some(vec![serde_json::to_value(_params).unwrap()]),
-        });
-
-        Ok(Some(vec![refresh, run]))
+        actions.push(refresh);
+        Ok(Some(actions))
     }
 }

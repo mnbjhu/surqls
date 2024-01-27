@@ -1,5 +1,17 @@
 [
   {
+    "result": [
+      {
+        "data": { "first": "first", "second": "second" },
+        "id": "test:140ng4i0u1fbarzcrgu6"
+      }
+    ],
+    "status": "OK",
+    "time": "126.08µs"
+  }
+]
+[
+  {
     "result": {
       "events": {},
       "fields": {

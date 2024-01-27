@@ -29,8 +29,9 @@ pub fn get_capabilities() -> InitializeResult {
                 resolve_provider: Some(false),
                 trigger_characters: Some(vec![
                     "/[a-zA-Z]/".to_string(),
-                    "::".to_string(),
+                    ":".to_string(),
                     ".".to_string(),
+                    "/[ ]/".to_string(),
                 ]),
                 work_done_progress_options: Default::default(),
                 all_commit_characters: None,
@@ -74,7 +75,11 @@ pub fn get_capabilities() -> InitializeResult {
             rename_provider: Some(OneOf::Left(true)),
             code_action_provider: Some(CodeActionProviderCapability::Simple(true)),
             execute_command_provider: Some(ExecuteCommandOptions {
-                commands: vec!["db.refresh".to_string(), "db.run".to_string()],
+                commands: vec![
+                    "db.refresh".to_string(),
+                    "db.run".to_string(),
+                    "db.define".to_string(),
+                ],
                 work_done_progress_options: Default::default(),
             }),
             inline_value_provider: Some(OneOf::Left(true)),

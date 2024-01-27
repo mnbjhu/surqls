@@ -5,6 +5,7 @@ use crate::{
     util::span::Spanned,
 };
 
+#[derive(Debug, Clone)]
 pub struct CreateStatement {
     pub table: Option<Spanned<String>>,
     pub content: Option<Spanned<Expression>>,

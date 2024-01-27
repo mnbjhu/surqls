@@ -1,4 +1,4 @@
-use crate::util::span::Spanned;
+use crate::{ast::statement::statement::Statement, util::span::Spanned};
 
 use super::{
     access::Access, literal::Literal, object::ObjectEntry, op::BinaryOperator, unary::UnaryOperator,
@@ -23,4 +23,10 @@ pub enum Expression {
     },
     Array(Vec<Spanned<Expression>>),
     Object(Vec<Spanned<ObjectEntry>>),
+    Variable(String),
+    CodeBlock(Vec<Spanned<Statement>>),
+    Call {
+        name: Vec<Spanned<String>>,
+        args: Option<Vec<Spanned<Expression>>>,
+    },
 }
