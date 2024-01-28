@@ -50,6 +50,9 @@ pub fn function_parser<'tokens, 'src: 'tokens>(
             optional_new_line().then(just(Token::Punctuation(')'))),
         );
 
-    name.then(args.or_not())
+    name.then(args.clone().or_not())
+        .or(ident
+            .map(|name| vec![name])
+            .then(args.clone().map(|args| Some(args))))
         .map_with(|(name, args), s| (Expression::Call { name, args }, s.span()))
 }

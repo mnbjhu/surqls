@@ -58,6 +58,7 @@ impl HasDiagnosticsForType for Spanned<&Vec<Spanned<ObjectEntry>>> {
                         });
                     }
                 }
+                missing.retain(|x| x.is_required);
                 if missing.len() > 0 {
                     diagnostics.push(Diagnostic {
                         range: span_to_range(&self.1, rope).unwrap(),

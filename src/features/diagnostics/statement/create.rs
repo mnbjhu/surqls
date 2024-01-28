@@ -2,7 +2,7 @@ use ropey::Rope;
 use tower_lsp::lsp_types::Diagnostic;
 
 use crate::{
-    ast::statement::crud::create::CreateStatement,
+    ast::{expr::types::Typed, statement::crud::create::CreateStatement},
     declarations::{scoped_item::ScopedItems, type_::Type},
     features::diagnostics::{
         self,
@@ -40,5 +40,21 @@ impl HasDiagnostic for Spanned<&CreateStatement> {
             diagnostics.extend(transform.0.diagnostics(rope, &scope));
         }
         diagnostics
+    }
+}
+
+impl Typed for CreateStatement {
+    fn get_type(&self, scope: &ScopedItems) -> Type {
+        let mut scope = scope.clone();
+        if let Some(table) = &self.table {
+            if let Some(obj) = scope.table_definitions.get(&table.0) {
+                for field in &obj.fields {
+                    scope.scoped_table.fields.retain(|f| f.name != field.name);
+                    scope.scoped_table.fields.push(field.clone());
+                }
+                return Type::Array(Box::new(Type::Object(obj.clone())));
+            }
+        }
+        Type::Any
     }
 }

@@ -8,7 +8,10 @@ use crate::{
     util::{range::span_to_range, span::Spanned},
 };
 
-use super::{op::get_bin_op_diagnostics_for_type, variable::get_variable_diagnostics_for_type};
+use super::{
+    function::get_function_call_diagnostics_for_type, op::get_bin_op_diagnostics_for_type,
+    variable::get_variable_diagnostics_for_type,
+};
 
 impl HasDiagnostic for Spanned<Expression> {
     fn diagnostics(&self, rope: &Rope, scope: &ScopedItems) -> Vec<Diagnostic> {
@@ -105,7 +108,12 @@ impl HasDiagnosticsForType for Spanned<Expression> {
             ),
             (Expression::Access { expr, access }, _) => match &access.0.as_ref() {
                 Access::Property(name) => {
-                    let ty = expr.0.get_type(scope);
+                    let mut ty = expr.0.get_type(scope);
+                    let mut array_nest_count = 0;
+                    while let Type::Array(inner_ty) = ty {
+                        ty = *inner_ty.clone();
+                        array_nest_count += 1;
+                    }
                     if let Type::Object(obj) = ty {
                         let prop = obj.get_field(name);
                         if prop.is_none() {
@@ -129,21 +137,40 @@ impl HasDiagnosticsForType for Spanned<Expression> {
                 }
                 Access::Index(index) => {
                     let ty = expr.0.get_type(scope);
-                    if let Type::Array(_) = ty {
+                    let mut array_type = ty.clone();
+                    while let Type::Option(inner) = array_type {
+                        array_type = *inner;
+                    }
+                    if let Type::Array(_) = array_type {
                         diagnostics.extend(index.diagnostics_for_type(rope, &Type::Int, scope));
                     } else {
-                        diagnostics.push(Diagnostic {
-                            range: span_to_range(&expr.1, rope).unwrap(),
-                            severity: Some(DiagnosticSeverity::ERROR),
-                            message: "Expected array type".to_string(),
-                            related_information: None,
-                            ..Default::default()
-                        });
+                        diagnostics.extend(expr.diagnostics_for_type(
+                            rope,
+                            &Type::Array(Box::new(Type::Any)),
+                            scope,
+                        ));
                     }
                 }
             },
             (Expression::Literal(lit), s) => {
                 diagnostics.extend((lit, self.1.clone()).diagnostics_for_type(rope, type_, scope));
+            }
+            (Expression::Call { name, args }, s) => {
+                diagnostics.extend(get_function_call_diagnostics_for_type(
+                    rope,
+                    type_,
+                    scope,
+                    s,
+                    &name
+                        .into_iter()
+                        .map(|x| x.0.clone())
+                        .collect::<Vec<_>>()
+                        .join("::"),
+                    &args.clone().unwrap_or_default(),
+                ))
+            }
+            (Expression::Inline(stmt), s) => {
+                diagnostics.extend(stmt.diagnostics(rope, scope));
             }
             _ => {}
         };

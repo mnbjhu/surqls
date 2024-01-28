@@ -3,7 +3,7 @@ use tower_lsp::lsp_types::{CompletionItem, CompletionItemKind, CompletionParams}
 
 use crate::{
     features::completions::has_completions::HasCompletionItems,
-    lexer::{keyword::Keyword, lexer::lexer, token::Token},
+    lexer::{lexer::lexer, token::Token},
     ls::backend::Backend,
     parser::parser::parser,
     util::range::span_to_range,

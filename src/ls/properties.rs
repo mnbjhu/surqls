@@ -143,7 +143,12 @@ pub async fn get_table_defs(backend: &Backend) -> HashMap<String, Object> {
                         _ => panic!("Expected define statement"),
                     })
                     .collect::<Vec<_>>();
-                let type_ = parse_table_defs(&statements, "".to_string(), backend).await;
+                let mut type_ = parse_table_defs(&statements, "".to_string(), backend).await;
+                type_.fields.push(Field {
+                    name: "id".to_string(),
+                    ty: Type::Record(name.clone()),
+                    is_required: false,
+                });
                 table_defs.insert(name, type_);
             }
 
@@ -212,15 +217,21 @@ pub async fn parse_table_defs(
                         } else {
                             format!("{}.{}", parents, field.name.0)
                         };
-                        let ty = parse_table_defs(statements, new_parent, backend).await;
+                        let ty =
+                            Type::Object(parse_table_defs(statements, new_parent, backend).await);
                         fields.push(Field {
                             name: field.name.0.clone(),
-                            ty: Type::Object(ty),
+                            ty,
+                            is_required: false,
                         });
                     } else {
                         let ty = parse_declared_type(&field.type_.0);
                         fields.push(Field {
                             name: field.name.0.clone(),
+                            is_required: match ty {
+                                Type::Option(_) => false,
+                                _ => true,
+                            },
                             ty,
                         });
                     }
@@ -255,9 +266,14 @@ pub fn parse_declared_type(AstType { name, args }: &AstType) -> Type {
                 .iter()
                 .map(|arg| {
                     let AstType { name, args: _ } = &arg.0;
+                    let ty = parse_declared_type(&arg.0);
                     Field {
                         name: name.0.clone(),
-                        ty: parse_declared_type(&arg.0),
+                        is_required: match ty {
+                            Type::Option(_) => false,
+                            _ => true,
+                        },
+                        ty,
                     }
                 })
                 .collect::<Vec<_>>(),

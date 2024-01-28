@@ -3,7 +3,7 @@ use tower_lsp::lsp_types::{CompletionItem, Position};
 
 use crate::{
     ast::{expr::types::Typed, statement::crud::select::SelectStatement},
-    declarations::{field::Field, scoped_item::ScopedItems},
+    declarations::{field::Field, scoped_item::ScopedItems, type_::Type},
     features::completions::{
         has_completions::HasCompletionItems, table_name::get_completion_items_for_table_name,
     },
@@ -31,9 +31,14 @@ impl HasCompletionItems for SelectStatement {
             let projection_range = span_to_range(&projection.1, rope).unwrap();
             if let Some(alias) = &projection.0.alias {
                 scope.scoped_table.fields.retain(|f| f.name != alias.0);
+                let ty = projection.0.expr.0.get_type(&scope);
                 scope.scoped_table.fields.push(Field {
                     name: alias.0.clone(),
-                    ty: projection.0.expr.0.get_type(&scope),
+                    is_required: match ty {
+                        Type::Option(_) => false,
+                        _ => true,
+                    },
+                    ty,
                 });
             }
             if projection_range.start <= position && position <= projection_range.end {

@@ -12,7 +12,8 @@ use crate::{
 
 use super::{
     access::access_parser, array::array_parser, code_block::code_block_parser,
-    function::function_parser, literal::literal_parser, object::object_parser, op::op_parser,
+    function::function_parser, literal::literal_parser, newline::optional_new_line,
+    object::object_parser, op::op_parser,
 };
 
 pub fn expr_parser<'tokens, 'src: 'tokens>(
@@ -42,11 +43,22 @@ pub fn expr_parser<'tokens, 'src: 'tokens>(
             just(Token::Punctuation('(')).ignored(),
             just(Token::Punctuation(')')).ignored(),
         );
+
+        let bracketed_statement = stmt
+            .clone()
+            .delimited_by(
+                just(Token::Punctuation('(')).then(optional_new_line()),
+                optional_new_line().then(just(Token::Punctuation(')'))),
+            )
+            .map(|e| Expression::Inline(Box::new(e)))
+            .map_with(|e, s| (e, s.span()));
+
         let atom = choice((
             literal,
             function_parser(expr.clone()),
             variable,
             ident,
+            bracketed_statement,
             bracketed,
         ));
         let access = access_parser(atom, expr.clone());

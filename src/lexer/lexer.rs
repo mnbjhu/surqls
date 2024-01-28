@@ -78,6 +78,12 @@ pub fn lexer<'a>() -> impl Parser<'a, &'a str, Vec<(Token, Span)>, extra::Err<Ri
 
     let explicit_float = float.then_ignore(just('f'));
 
+    let float = digits
+        .clone()
+        .then_ignore(just('.'))
+        .then(digits.clone())
+        .map(|(a, b): (&str, &str)| Token::Float(format!("{}.{}", a, b)));
+
     let escape = just('\\')
         .then(choice((
             just('\\'),

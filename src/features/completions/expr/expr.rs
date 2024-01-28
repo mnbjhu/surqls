@@ -9,8 +9,8 @@ use crate::{
 };
 
 use super::{
-    ident::get_completion_for_field, op::get_completions_for_binary,
-    variable::get_completion_for_variable,
+    function::get_completions_for_function, ident::get_completion_for_field,
+    op::get_completions_for_binary, variable::get_completion_for_variable,
 };
 
 impl HasCompletionItemsForType for Expression {
@@ -40,18 +40,34 @@ impl HasCompletionItemsForType for Expression {
                 }
                 vec![]
             }
-            Expression::Identifier(_) => get_completion_for_field(scope),
+            Expression::Identifier(_) => {
+                let mut completions = vec![];
+                completions.extend(get_completion_for_field(scope));
+                completions.extend(get_completions_for_function(scope));
+                completions
+            }
             Expression::Access { expr, access } => match access.0.as_ref() {
                 Access::Property(_) => {
-                    let ty = expr.0.get_type(scope);
+                    let mut ty = expr.0.get_type(scope);
+                    let mut array_nest_count = 0;
+                    while let Type::Array(inner_ty) = ty {
+                        ty = *inner_ty.clone();
+                        array_nest_count += 1;
+                    }
                     if let Type::Object(obj) = ty {
                         obj.fields
                             .into_iter()
-                            .map(|x| CompletionItem {
-                                label: x.name.clone(),
-                                detail: Some(format!("{}", x.ty)),
-                                kind: Some(CompletionItemKind::FIELD),
-                                ..Default::default()
+                            .map(|x| {
+                                let mut ty = x.ty;
+                                for _ in 0..array_nest_count {
+                                    ty = Type::Array(Box::new(ty));
+                                }
+                                CompletionItem {
+                                    label: x.name.clone(),
+                                    detail: Some(format!("{}", ty)),
+                                    kind: Some(CompletionItemKind::FIELD),
+                                    ..Default::default()
+                                }
                             })
                             .collect::<Vec<_>>()
                     } else {
@@ -79,6 +95,7 @@ impl HasCompletionItemsForType for Expression {
                     },
                 ]
             }
+            Expression::Inline(s) => s.as_ref().0.get_completion_items(scope, position, rope),
             _ => vec![],
         }
     }

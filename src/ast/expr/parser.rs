@@ -25,6 +25,7 @@ pub enum Expression {
     Object(Vec<Spanned<ObjectEntry>>),
     Variable(String),
     CodeBlock(Vec<Spanned<Statement>>),
+    Inline(Box<Spanned<Statement>>),
     Call {
         name: Vec<Spanned<String>>,
         args: Option<Vec<Spanned<Expression>>>,
