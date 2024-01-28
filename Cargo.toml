@@ -1,7 +1,13 @@
 [package]
 name = "surqls"
-version = "0.1.0"
+version = "0.0.1-alpha.1"
 edition = "2021"
+homepage = "https://github.com/mnbjhu/surqls"
+documentation = "https://github.com/mnbjhu/surqls"
+repository = "https://github.com/mnbjhu/surqls"
+readme = "README.md"
+license = "MIT OR Apache-2.0"
+keywords = ["surql", "surqls", "lsp", "language server", "surrealdb", "surrealql"]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 [dependencies]
