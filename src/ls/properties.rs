@@ -238,8 +238,11 @@ pub fn parse_declared_type(AstType { name, args }: &AstType) -> Type {
         "int" => Type::Int,
         "float" => Type::Float,
         "boolean" => Type::Bool,
+        "decimal" => Type::Decimal,
+        "number" => Type::Number,
         "null" => Type::Null,
         "any" => Type::Any,
+        "datetime" => Type::DateTime,
         "array" => {
             if args.len() != 1 {
                 Type::Error

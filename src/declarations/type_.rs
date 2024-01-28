@@ -10,6 +10,8 @@ pub enum Type {
     Bool,
     Float,
     Int,
+    Decimal,
+    Number,
     String,
     DateTime,
     Duration,
@@ -34,35 +36,42 @@ impl Display for Type {
             Type::Object(_) => write!(f, "object"),
             Type::DateTime => write!(f, "datetime"),
             Type::Duration => write!(f, "duration"),
+            Type::Decimal => write!(f, "decimal"),
+            Type::Number => write!(f, "number"),
         }
     }
 }
 
 impl Type {
     pub fn is_assignable_to(&self, other: &Type) -> bool {
+        if self == other {
+            return true;
+        }
         match (self, other) {
             (Type::Option(a), Type::Option(b)) => a.is_assignable_to(b),
             (Type::Option(_), Type::Null) => true,
             (Type::Option(a), b) => a.is_assignable_to(b),
             (Type::Error, _) => true,
             (_, Type::Error) => true,
-            (Type::Null, Type::Null) => true,
             (Type::Any, _) => true,
             (_, Type::Any) => false,
-            (Type::Bool, Type::Bool) => true,
-            (Type::Float, Type::Float) => true,
-            (Type::Int, Type::Int) => true,
-            (Type::String, Type::String) => true,
-            (Type::DateTime, Type::DateTime) => true,
-            (Type::Duration, Type::Duration) => true,
             (Type::Array(a), Type::Array(b)) => a.is_assignable_to(b),
             (Type::Object(a), Type::Object(b)) => a.is_assignable_to(b),
             (Type::Record(a), Type::Record(b)) => a == b,
+            (Type::Number, Type::Int) => true,
+            (Type::Number, Type::Float) => true,
+            (Type::Number, Type::Decimal) => true,
+            (Type::Decimal, Type::Int) => true,
+            (Type::Decimal, Type::Float) => true,
+            (Type::Float, Type::Int) => true,
             _ => false,
         }
     }
 
     pub fn get_shared_super_type(&self, other: &Type) -> Type {
+        if self == other {
+            return self.clone();
+        }
         match (self, other) {
             (Type::Option(a), Type::Option(b)) => {
                 Type::Option(Box::new(a.get_shared_super_type(b)))
@@ -75,12 +84,6 @@ impl Type {
             (_, Type::Error) => Type::Error,
             (Type::Any, _) => Type::Any,
             (_, Type::Any) => Type::Any,
-            (Type::Bool, Type::Bool) => Type::Bool,
-            (Type::Float, Type::Float) => Type::Float,
-            (Type::Int, Type::Int) => Type::Int,
-            (Type::String, Type::String) => Type::String,
-            (Type::DateTime, Type::DateTime) => Type::DateTime,
-            (Type::Duration, Type::Duration) => Type::Duration,
             (Type::Array(a), Type::Array(b)) => Type::Array(Box::new(a.get_shared_super_type(b))),
             (Type::Object(a), Type::Object(b)) => {
                 if a == b {
@@ -96,6 +99,20 @@ impl Type {
                     Type::Error
                 }
             }
+            (Type::Number, Type::Int) => Type::Number,
+            (Type::Number, Type::Float) => Type::Number,
+            (Type::Number, Type::Decimal) => Type::Number,
+            (Type::Decimal, Type::Int) => Type::Decimal,
+            (Type::Decimal, Type::Float) => Type::Decimal,
+            (Type::Float, Type::Int) => Type::Float,
+
+            (Type::Int, Type::Number) => Type::Number,
+            (Type::Float, Type::Number) => Type::Number,
+            (Type::Decimal, Type::Number) => Type::Number,
+            (Type::Int, Type::Decimal) => Type::Decimal,
+            (Type::Float, Type::Decimal) => Type::Decimal,
+            (Type::Int, Type::Float) => Type::Float,
+
             _ => Type::Any,
         }
     }

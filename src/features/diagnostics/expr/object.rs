@@ -34,7 +34,7 @@ impl HasDiagnosticsForType for Spanned<&Vec<Spanned<ObjectEntry>>> {
                                 ..Default::default()
                             });
                             diagnostics.push(Diagnostic {
-                                range: span_to_range(&prev.1, rope).unwrap(),
+                                range: span_to_range(&prev.0.key.1, rope).unwrap(),
                                 severity: Some(DiagnosticSeverity::INFORMATION),
                                 message: format!("Field '{}' previously defined here", key.0),
                                 ..Default::default()

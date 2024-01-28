@@ -4,8 +4,9 @@ pub enum Literal {
     DateTime(String),
     Duration(String),
     RecordString(String),
-    Int(i64),
-    Float(f64),
+    Int(String),
+    Float(String),
+    Decimal(String),
     Bool(bool),
     Null,
 }

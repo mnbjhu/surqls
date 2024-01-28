@@ -32,6 +32,7 @@ pub fn lex(file: PathBuf) {
                     Token::Duration(_) => "red",
                     Token::Float(_) => "red",
                     Token::Integer(_) => "red",
+                    Token::Decimal(_) => "red",
                     Token::RecordString(_) => "red",
                     Token::Boolean(_) => "yellow",
                     Token::Variable(_) => "white",

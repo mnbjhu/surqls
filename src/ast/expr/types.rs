@@ -13,6 +13,7 @@ impl Typed for Expression {
                 Literal::String(_) => Type::String,
                 Literal::Int(_) => Type::Int,
                 Literal::Float(_) => Type::Float,
+                Literal::Decimal(_) => Type::Decimal,
                 Literal::Bool(_) => Type::Bool,
                 Literal::Null => Type::Null,
                 Literal::DateTime(_) => Type::DateTime,
@@ -76,9 +77,7 @@ impl Typed for Expression {
                 let mut ty = array[0].0.get_type(scope);
                 for item in array {
                     let item_ty = item.0.get_type(scope);
-                    if !item_ty.is_assignable_to(&ty) {
-                        ty = ty.get_shared_super_type(&item_ty)
-                    }
+                    ty = ty.get_shared_super_type(&item_ty)
                 }
                 Type::Array(Box::new(ty))
             }

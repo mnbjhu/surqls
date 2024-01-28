@@ -4,8 +4,9 @@ use super::keyword::Keyword;
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum Token {
-    Integer(i64),
-    Float(f64),
+    Integer(String),
+    Float(String),
+    Decimal(String),
     String(String),
     DateTime(String),
     Boolean(bool),
@@ -27,6 +28,7 @@ impl Display for Token {
             Token::Duration(i) => write!(f, "{}", i),
             Token::Integer(i) => write!(f, "{}", i),
             Token::Float(fl) => write!(f, "{}", fl),
+            Token::Decimal(fl) => write!(f, "{}", fl),
             Token::String(s) => write!(f, "\"{}\"", s),
             Token::Boolean(b) => write!(f, "{}", b),
             Token::Identifier(s) => write!(f, "{}", s),

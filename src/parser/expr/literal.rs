@@ -11,6 +11,7 @@ pub fn literal_parser<'tokens, 'src: 'tokens>(
     select! {
         Token::Integer(i) => Literal::Int(i),
         Token::Float(f) => Literal::Float(f),
+        Token::Decimal(d) => Literal::Decimal(d),
         Token::String(s) => Literal::String(s.to_string()),
         Token::Boolean(b) => Literal::Bool(b),
         Token::DateTime(dt) => Literal::DateTime(dt.to_string()),

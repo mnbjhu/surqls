@@ -12,62 +12,71 @@ use super::{keyword::Keyword, token::Token};
 
 pub fn lexer<'a>() -> impl Parser<'a, &'a str, Vec<(Token, Span)>, extra::Err<Rich<'a, char>>> {
     let space = one_of(" \t").repeated().ignored().or_not();
-    let ident = text::ident()
-        .map(|s: &str| {
-            let lower = s.to_lowercase();
-            match lower.as_str() {
-                "select" => Token::Keyword(Keyword::Select),
-                "create" => Token::Keyword(Keyword::Create),
-                "insert" => Token::Keyword(Keyword::Insert),
-                "update" => Token::Keyword(Keyword::Update),
-                "delete" => Token::Keyword(Keyword::Delete),
-                "from" => Token::Keyword(Keyword::From),
-                "where" => Token::Keyword(Keyword::Where),
-                "and" => Token::Keyword(Keyword::And),
-                "or" => Token::Keyword(Keyword::Or),
-                "not" => Token::Keyword(Keyword::Not),
-                "null" => Token::Keyword(Keyword::Null),
-                "define" => Token::Keyword(Keyword::Define),
-                "table" => Token::Keyword(Keyword::Table),
-                "field" => Token::Keyword(Keyword::Field),
-                "type" => Token::Keyword(Keyword::Type),
-                "on" => Token::Keyword(Keyword::On),
-                "as" => Token::Keyword(Keyword::As),
-                "order" => Token::Keyword(Keyword::Order),
-                "by" => Token::Keyword(Keyword::By),
-                "limit" => Token::Keyword(Keyword::Limit),
-                "skip" => Token::Keyword(Keyword::Skip),
-                "content" => Token::Keyword(Keyword::Content),
-                "return" => Token::Keyword(Keyword::Return),
-                "full" => Token::Keyword(Keyword::Full),
-                "none" => Token::Keyword(Keyword::None),
-                "permissions" => Token::Keyword(Keyword::Permissions),
-                "let" => Token::Keyword(Keyword::Let),
-                "true" => Token::Boolean(true),
-                "false" => Token::Boolean(false),
-                _ => Token::Identifier(s.to_string()),
-            }
-        })
-        .map_with(|t, s| (t, s.span()));
+    let ident = text::ident().map(|s: &str| {
+        let lower = s.to_lowercase();
+        match lower.as_str() {
+            "select" => Token::Keyword(Keyword::Select),
+            "create" => Token::Keyword(Keyword::Create),
+            "insert" => Token::Keyword(Keyword::Insert),
+            "update" => Token::Keyword(Keyword::Update),
+            "delete" => Token::Keyword(Keyword::Delete),
+            "from" => Token::Keyword(Keyword::From),
+            "where" => Token::Keyword(Keyword::Where),
+            "and" => Token::Keyword(Keyword::And),
+            "or" => Token::Keyword(Keyword::Or),
+            "not" => Token::Keyword(Keyword::Not),
+            "null" => Token::Keyword(Keyword::Null),
+            "define" => Token::Keyword(Keyword::Define),
+            "table" => Token::Keyword(Keyword::Table),
+            "field" => Token::Keyword(Keyword::Field),
+            "type" => Token::Keyword(Keyword::Type),
+            "on" => Token::Keyword(Keyword::On),
+            "as" => Token::Keyword(Keyword::As),
+            "order" => Token::Keyword(Keyword::Order),
+            "by" => Token::Keyword(Keyword::By),
+            "limit" => Token::Keyword(Keyword::Limit),
+            "skip" => Token::Keyword(Keyword::Skip),
+            "content" => Token::Keyword(Keyword::Content),
+            "return" => Token::Keyword(Keyword::Return),
+            "full" => Token::Keyword(Keyword::Full),
+            "none" => Token::Keyword(Keyword::None),
+            "permissions" => Token::Keyword(Keyword::Permissions),
+            "let" => Token::Keyword(Keyword::Let),
+            "true" => Token::Boolean(true),
+            "false" => Token::Boolean(false),
+            _ => Token::Identifier(s.to_string()),
+        }
+    });
 
     let variable = just('$')
         .then(text::ident())
-        .map(|(_, s): (char, &str)| Token::Variable(s.to_string()))
-        .map_with(|t, e| (t, e.span()));
+        .map(|(_, s): (char, &str)| Token::Variable(s.to_string()));
 
     let digits = text::digits(10).to_slice();
 
     let int = digits
         .clone()
-        .map(|s: &str| Token::Integer(s.parse().unwrap()))
-        .map_with(|t, e| (t, e.span()));
+        .map(|s: &str| Token::Integer(s.parse().unwrap()));
 
     let float = digits
         .clone()
-        .then_ignore(just('.'))
-        .then(digits.clone())
-        .map(|(a, b): (&str, &str)| Token::Float(format!("{}.{}", a, b).parse().unwrap()))
-        .map_with(|t, e| (t, e.span()));
+        .then(just('.').ignore_then(digits.clone()).or_not());
+
+    let decimal =
+        float
+            .clone()
+            .then_ignore(just("dec"))
+            .map(|(a, b): (&str, Option<&str>)| match b {
+                Some(b) => Token::Decimal(format!("{}.{}", a, b)),
+                None => Token::Decimal(a.to_string()),
+            });
+
+    let float = float.map(|(a, b): (&str, Option<&str>)| match b {
+        Some(b) => Token::Float(format!("{}.{}", a, b)),
+        None => Token::Float(a.to_string()),
+    });
+
+    let explicit_float = float.then_ignore(just('f'));
 
     let escape = just('\\')
         .then(choice((
@@ -107,8 +116,7 @@ pub fn lexer<'a>() -> impl Parser<'a, &'a str, Vec<(Token, Span)>, extra::Err<Ri
         .clone()
         .then(duration_part.repeated())
         .to_slice()
-        .map(|s: &str| Token::Duration(s.to_string()))
-        .map_with(|t, e| (t, e.span()));
+        .map(|s: &str| Token::Duration(s.to_string()));
 
     let string = none_of("\\\"")
         .ignored()
@@ -124,35 +132,28 @@ pub fn lexer<'a>() -> impl Parser<'a, &'a str, Vec<(Token, Span)>, extra::Err<Ri
 
     let record_string = just('r')
         .ignore_then(string.clone())
-        .map(|s: &str| Token::RecordString(s.to_string()))
-        .map_with(|t, e| (t, e.span()));
+        .map(|s: &str| Token::RecordString(s.to_string()));
 
     let datetime_string = just('d')
         .ignore_then(string.clone())
-        .map(|s: &str| Token::DateTime(s.to_string()))
-        .map_with(|t, e| (t, e.span()));
+        .map(|s: &str| Token::DateTime(s.to_string()));
 
     let explicit_string = just('s')
         .ignore_then(string.clone())
-        .map(|s: &str| Token::String(s.to_string()))
-        .map_with(|t, e| (t, e.span()));
+        .map(|s: &str| Token::String(s.to_string()));
 
-    let string = string
-        .map(|s: &str| {
-            if let Ok(_) = chrono::DateTime::parse_from_rfc3339(s) {
-                return Token::DateTime(s.to_string());
-            };
-            let record_id_regex = regex::Regex::new(r"^[a-zA-Z0-9_]+:[a-zA-Z0-9_]+$").unwrap();
-            if record_id_regex.is_match(s) {
-                return Token::RecordString(s.to_string());
-            }
-            Token::String(s.to_string())
-        })
-        .map_with(|t, e| (t, e.span()));
+    let string = string.map(|s: &str| {
+        if let Ok(_) = chrono::DateTime::parse_from_rfc3339(s) {
+            return Token::DateTime(s.to_string());
+        };
+        let record_id_regex = regex::Regex::new(r"^[a-zA-Z0-9_]+:[a-zA-Z0-9_]+$").unwrap();
+        if record_id_regex.is_match(s) {
+            return Token::RecordString(s.to_string());
+        }
+        Token::String(s.to_string())
+    });
 
-    let punctuation = one_of("#_.,;:{}[]()")
-        .map(Token::Punctuation)
-        .map_with(|t, e| (t, e.span()));
+    let punctuation = one_of("#_.,;:{}[]()").map(Token::Punctuation);
 
     let comparisons = choice((
         just("==").map(|_| Token::Operator("==".to_string())),
@@ -162,24 +163,22 @@ pub fn lexer<'a>() -> impl Parser<'a, &'a str, Vec<(Token, Span)>, extra::Err<Ri
         just("<").map(|_| Token::Operator("<".to_string())),
         just(">").map(|_| Token::Operator(">".to_string())),
         just("!=").map(|_| Token::Operator("!=".to_string())),
-    ))
-    .map_with(|t, e| (t, e.span()));
+    ));
 
     let op = one_of("+-*/|&!")
         .to_slice()
         .then(one_of("+-*/|&!").repeated().collect::<String>())
-        .map(|(f, s)| Token::Operator(format!("{}{}", f, s)))
-        .map_with(|t, e| (t, e.span()));
+        .map(|(f, s)| Token::Operator(format!("{}{}", f, s)));
 
     let new_line = one_of("\n").ignored().padded_by(space);
 
     let implicit_semi = new_line
         .clone()
         .then_ignore(new_line.repeated())
-        .map_with(|_, e| (Token::Newline, e.span()));
+        .map(|_| Token::Newline);
 
     let semi = just(";")
-        .map_with(|_, e| (Token::Punctuation(';'), e.span()))
+        .map(|_| Token::Punctuation(';'))
         .padded_by(new_line.repeated());
 
     choice((
@@ -190,15 +189,18 @@ pub fn lexer<'a>() -> impl Parser<'a, &'a str, Vec<(Token, Span)>, extra::Err<Ri
         record_string,
         string,
         ident,
+        decimal,
+        explicit_float,
+        float,
         duration,
         int,
-        float,
         punctuation,
         comparisons,
         op,
         implicit_semi,
     ))
     .padded_by(space)
+    .map_with(|t, e| (t, e.span()))
     .repeated()
     .collect::<Vec<_>>()
 }

@@ -3,7 +3,7 @@ use tower_lsp::lsp_types::{Diagnostic, DiagnosticSeverity};
 
 use crate::{
     ast::statement::define::DefineStatement,
-    declarations::{scoped_item::ScopedItems, type_::Type},
+    declarations::{field::Field, scoped_item::ScopedItems, type_::Type},
     features::diagnostics::diagnostic::HasDiagnostic,
     ls::properties::parse_declared_type,
     util::{range::span_to_range, span::Spanned},
@@ -51,7 +51,11 @@ impl HasDiagnostic for Spanned<&DefineStatement> {
                         match scoped_type.get_field(field_name) {
                             Some(ty) => {
                                 let declared_type = parse_declared_type(&field.0.type_.0);
-                                if ty.ty != declared_type {
+                                let both_object = match (&ty.ty, &declared_type) {
+                                    (Type::Object(_), Type::Object(_)) => true,
+                                    _ => false,
+                                };
+                                if ty.ty != declared_type && !both_object {
                                     return vec![Diagnostic {
                                         range: span_to_range(&self.1, rope).unwrap(),
                                         severity: Some(DiagnosticSeverity::WARNING),

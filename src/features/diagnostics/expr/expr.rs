@@ -2,7 +2,7 @@ use ropey::Rope;
 use tower_lsp::lsp_types::{Diagnostic, DiagnosticSeverity};
 
 use crate::{
-    ast::expr::{access::Access, parser::Expression, types::Typed},
+    ast::expr::{access::Access, literal::Literal, parser::Expression, types::Typed},
     declarations::{scoped_item::ScopedItems, type_::Type},
     features::diagnostics::diagnostic::{HasDiagnostic, HasDiagnosticsForType},
     util::{range::span_to_range, span::Spanned},
@@ -24,18 +24,36 @@ impl HasDiagnosticsForType for Spanned<Expression> {
         scope: &ScopedItems,
     ) -> Vec<Diagnostic> {
         let mut diagnostics = vec![];
+        if let Type::Option(inner) = type_ {
+            let actual_type = &self.0.get_type(scope);
+            match actual_type {
+                Type::Null => return self.diagnostics_for_type(rope, &Type::Null, scope),
+                _ => {
+                    if !&inner.is_assignable_to(actual_type) {
+                        diagnostics.push(Diagnostic {
+                            range: span_to_range(&self.1, rope).unwrap(),
+                            severity: Some(DiagnosticSeverity::ERROR),
+                            message: format!(
+                                "Expected type {}, found type {}",
+                                type_,
+                                self.0.get_type(scope)
+                            ),
+                            related_information: None,
+                            ..Default::default()
+                        });
+                        diagnostics.extend(self.diagnostics_for_type(rope, &Type::Any, scope));
+                        return diagnostics;
+                    }
+                    diagnostics.extend(self.diagnostics_for_type(rope, inner, scope));
+                    return diagnostics;
+                }
+            }
+        }
         if let (Expression::Object(obj), s) = &self {
             match type_ {
                 Type::Object(_) | Type::Any => {
                     diagnostics.extend((obj, s.clone()).diagnostics_for_type(rope, type_, scope));
                     return diagnostics;
-                }
-                Type::Option(opt) => {
-                    if let Type::Object(_) = opt.as_ref() {
-                        diagnostics
-                            .extend((obj, s.clone()).diagnostics_for_type(rope, &opt, scope));
-                        return diagnostics;
-                    }
                 }
                 _ => {}
             }
