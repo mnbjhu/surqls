@@ -8,6 +8,7 @@ repository = "https://github.com/mnbjhu/surqls"
 readme = "README.md"
 license = "MIT OR Apache-2.0"
 keywords = ["surql", "surqls", "lsp", "language server", "surrealdb", "surrealql"]
+authors = ["James Gibson"]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 [dependencies]
