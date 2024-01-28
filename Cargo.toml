@@ -7,9 +7,11 @@ documentation = "https://github.com/mnbjhu/surqls"
 repository = "https://github.com/mnbjhu/surqls"
 readme = "README.md"
 license = "MIT OR Apache-2.0"
+description = "A language server for surrealql"
 keywords = ["surql", "surqls", "lsp", "language server", "surrealdb", "surrealql"]
 authors = ["James Gibson"]
 
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 [dependencies]
 chumsky = { version = "1.0.0-alpha.6", features = ["label"] }
 env_logger = "0.11.1"
