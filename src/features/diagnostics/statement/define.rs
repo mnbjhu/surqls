@@ -3,7 +3,7 @@ use tower_lsp::lsp_types::{Diagnostic, DiagnosticSeverity};
 
 use crate::{
     ast::statement::define::DefineStatement,
-    declarations::{field::Field, scoped_item::ScopedItems, type_::Type},
+    declarations::{scoped_item::ScopedItems, type_::Type},
     features::diagnostics::diagnostic::HasDiagnostic,
     ls::properties::parse_declared_type,
     util::{range::span_to_range, span::Spanned},
@@ -22,9 +22,12 @@ impl HasDiagnostic for Spanned<&DefineStatement> {
                 }],
             },
             DefineStatement::Field(field) => {
-                let table_name = &field.0.table_name.0;
+                if field.0.table_name.is_none() {
+                    return vec![];
+                }
+                let table_name = &field.0.table_name.clone().unwrap();
                 let field_name = &field.0.name.0;
-                match scope.table_definitions.get(table_name) {
+                match scope.table_definitions.get(&table_name.0) {
                     Some(table) => {
                         let mut scoped_type = table.clone();
                         for parent in &field.0.parents {
@@ -48,9 +51,14 @@ impl HasDiagnostic for Spanned<&DefineStatement> {
                                 }];
                             }
                         }
+                        if field.0.type_.is_none() {
+                            return vec![];
+                        }
+                        let field_type = field.0.type_.clone().unwrap();
+
                         match scoped_type.get_field(field_name) {
                             Some(ty) => {
-                                let declared_type = parse_declared_type(&field.0.type_.0);
+                                let declared_type = parse_declared_type(&field_type.0);
                                 let both_object = match (&ty.ty, &declared_type) {
                                     (Type::Object(_), Type::Object(_)) => true,
                                     _ => false,
@@ -79,7 +87,7 @@ impl HasDiagnostic for Spanned<&DefineStatement> {
                         vec![]
                     }
                     None => vec![Diagnostic {
-                        range: span_to_range(&field.0.table_name.1, rope).unwrap(),
+                        range: span_to_range(&table_name.1, rope).unwrap(),
                         severity: Some(DiagnosticSeverity::ERROR),
                         message: "Table not found".to_string(),
                         ..Default::default()

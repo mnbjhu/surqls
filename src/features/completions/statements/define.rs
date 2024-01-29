@@ -22,14 +22,19 @@ impl HasCompletionItems for DefineStatement {
                 vec![]
             }
             DefineStatement::Field(field) => {
-                let table_name_range = span_to_range(&field.0.table_name.1, rope).unwrap();
-                if table_name_range.start <= position && position <= table_name_range.end {
-                    return get_completion_items_for_table_name(scope);
-                }
-                let type_range = span_to_range(&field.0.type_.1, rope).unwrap();
-                if type_range.start <= position && position <= type_range.end {
-                    return field.0.type_.0.get_completion_items(scope, position, rope);
-                }
+                if let Some(table_name) = &field.0.table_name {
+                let table_name_range = span_to_range(&table_name.1, rope).unwrap();
+                    if table_name_range.start <= position && position <= table_name_range.end {
+                        return get_completion_items_for_table_name(scope);
+                    }
+
+                    if let Some(type_) = &field.0.type_ {
+                        let type_range = span_to_range(&type_.1, rope).unwrap();
+                        if type_range.start <= position && position <= type_range.end {
+                            return type_.0.get_completion_items(scope, position, rope);
+                        }
+                    }
+                };
                 vec![]
             }
         }

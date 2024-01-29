@@ -1,40 +1,29 @@
-define table todo;
-define field title on todo type string;
-define field description on todo type string;
-define field tasks on todo type array<string>;
+define table test;
+define field some on test type option<string>;
 
-let $created = (create todo content { 
-    title: "test", 
-    description: "test",
-    tasks: ["test1", "test2"],
+define table rel;
+define field in on rel type record<test>
+define field out on rel type record<test>
+
+
+return {
+  let $first = (create test content {
+    some: "First thing"
   });
-return $created.title;
 
-let $nested_array_of_obj = [
-  [
-    { test: "data1"},
-    { test: "data2"}
-  ],
-  [
-    { test: "data3"},
-    { test: "data4"}
-  ]
-];
+  let $second = (create test content {
+    some: "Second thing"
+  });
 
-let $test_thing = $nested_array_of_obj.test;
+  create rel content {
+    in: $first[0].id,
+    out: $second[0].id,
+  };
+};
 
-define table item;
-define field name on item type string;
-
-define table person;
-define field name on person type any;
-
-define table purchase;
-define field in on purchase type record<person>;
-define field out on purchase type record<item>;
-
-let $person = (create person content { name: "test" });
-
-let $some = (select title, "Hello" as my_string from todo);
-
-return $some[0].title;
+return {
+  let $first = (create test content {
+    some: "First thing"
+  });
+  return $first.id[0];
+};

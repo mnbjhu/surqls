@@ -80,11 +80,7 @@ impl LanguageServer for Backend {
         match parse_config(self).await {
             Ok(_) => {
                 let defs = get_table_defs(&self).await;
-                let scope = ScopedItems {
-                    table_definitions: defs,
-                    ..Default::default()
-                };
-                self.state.lock().await.table_definitions = scope.table_definitions;
+                self.state.lock().await.table_definitions = defs;
             }
             Err(err) => {
                 self.client

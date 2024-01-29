@@ -211,7 +211,8 @@ pub async fn parse_table_defs(
                     .collect::<Vec<_>>()
                     .join(".");
                 if parent == parents {
-                    if &field.type_.0.name.0 == "object" {
+                    let field_type = &field.type_.clone().unwrap();
+                    if &field_type.0.name.0 == "object" {
                         let new_parent = if parents == "" {
                             field.name.0.clone()
                         } else {
@@ -225,7 +226,7 @@ pub async fn parse_table_defs(
                             is_required: false,
                         });
                     } else {
-                        let ty = parse_declared_type(&field.type_.0);
+                        let ty = parse_declared_type(&field_type.0);
                         fields.push(Field {
                             name: field.name.0.clone(),
                             is_required: match ty {
