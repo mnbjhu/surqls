@@ -1,0 +1,4 @@
+include = ["surqls.toml"]
+[schema]
+path = "https://raw.githubusercontent.com/mnbjhu/surqls/main/taplo_schema.json"
+enabled = true
